@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Djenné · Survol du Drone</title>
+  <link rel="stylesheet" href="styles/main.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+
+<body>
+  <main id="stage" class="stage">
+
+    <!-- Halo lumineux d'arrière-plan -->
+    <div class="sky" aria-hidden="true"></div>
+    <div class="sun" aria-hidden="true"></div>
+    <div class="grid" aria-hidden="true"></div>
+    <div class="sand" aria-hidden="true"></div>
+
+    <!-- Bandeau motif (CSS) -->
+    <div class="mosque" aria-hidden="true">
+      <div class="band-halo"></div>
+      <div class="band-row row-chev-up"></div>
+      <div class="band-row row-rhombus"></div>
+      <div class="band-row row-chev-down"></div>
+      <div class="band-row row-tri"></div>
+    </div>
+
+    <!-- Cadre HUD futuriste -->
+    <div class="hud" aria-hidden="true">
+      <span class="corner tl"></span>
+      <span class="corner tr"></span>
+      <span class="corner bl"></span>
+      <span class="corner br"></span>
+    </div>
+
+    <!-- Particules dorées flottantes -->
+    <div class="particles" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <!-- Panneaux HUD latéraux (grand écran) -->
+    <aside class="side left" aria-hidden="true">
+      <div class="side-label">N · 14°26'12"</div>
+      <ul class="side-list">
+        <li><span>01</span>SCAN OK</li>
+        <li><span>02</span>LINK 5G</li>
+        <li><span>03</span>GPS LOCK</li>
+        <li><span>04</span>IMU CAL</li>
+        <li><span>05</span>CAM 4K</li>
+      </ul>
+      <div class="side-bars">
+        <div class="vb"><i style="--h:78%"></i></div>
+        <div class="vb"><i style="--h:54%"></i></div>
+        <div class="vb"><i style="--h:92%"></i></div>
+        <div class="vb"><i style="--h:66%"></i></div>
+        <div class="vb"><i style="--h:88%"></i></div>
+      </div>
+      <div class="side-tag">SECT · A-04</div>
+    </aside>
+
+    <aside class="side right" aria-hidden="true">
+      <div class="side-label">W · 04°33'07"</div>
+      <div class="compass">
+        <svg viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="44" fill="none" stroke="#f9d58b" stroke-width="1" opacity=".7" />
+          <circle cx="50" cy="50" r="34" fill="none" stroke="#f9d58b" stroke-width=".5" stroke-dasharray="2 4"
+            opacity=".5" />
+          <g stroke="#f9d58b" stroke-width="1">
+            <line x1="50" y1="6" x2="50" y2="14" />
+            <line x1="50" y1="86" x2="50" y2="94" />
+            <line x1="6" y1="50" x2="14" y2="50" />
+            <line x1="86" y1="50" x2="94" y2="50" />
+          </g>
+          <polygon points="50,18 46,50 54,50" fill="#f9d58b" />
+          <polygon points="50,82 46,50 54,50" fill="#f9d58b" opacity=".35" />
+          <text x="50" y="4" text-anchor="middle" font-size="6" fill="#f9d58b">N</text>
+          <text x="50" y="100" text-anchor="middle" font-size="6" fill="#f9d58b" opacity=".5">S</text>
+          <text x="2" y="52" font-size="6" fill="#f9d58b" opacity=".5">W</text>
+          <text x="93" y="52" font-size="6" fill="#f9d58b" opacity=".5">E</text>
+        </svg>
+      </div>
+      <ul class="side-list">
+        <li><span>T°</span>32°C</li>
+        <li><span>HR</span>14%</li>
+        <li><span>PR</span>1012</li>
+        <li><span>UV</span>09</li>
+      </ul>
+      <div class="side-tag">FREQ · 2.4 GHz</div>
+    </aside>
+
+    <!-- Tablette holographique -->
+    <section class="panel">
+      <div class="holo-tablet" id="tablet">
+        <span class="edge e1"></span><span class="edge e2"></span>
+        <span class="edge e3"></span><span class="edge e4"></span>
+        <span class="bolt b1"></span><span class="bolt b2"></span>
+        <span class="bolt b3"></span><span class="bolt b4"></span>
+
+        <!-- En-tête -->
+        <header class="t-head">
+          <div class="t-brand">
+            <span class="logo">◈</span>
+            <span>DJENNÉ · RECON SYS</span>
+          </div>
+          <div class="t-status">
+            <i></i><i></i><i></i>
+            <span>v1.0 · ONLINE</span>
+          </div>
+        </header>
+
+        <!-- Grille principale -->
+        <div class="t-grid">
+          <!-- Colonne gauche : infos -->
+          <aside class="t-left">
+            <div class="t-row">
+              <span class="t-ico">
+                <svg viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5" />
+                  <circle cx="12" cy="12" r="3" fill="currentColor" />
+                  <line x1="12" y1="2" x2="12" y2="6" stroke="currentColor" stroke-width="1.5" />
+                  <line x1="12" y1="18" x2="12" y2="22" stroke="currentColor" stroke-width="1.5" />
+                  <line x1="2" y1="12" x2="6" y2="12" stroke="currentColor" stroke-width="1.5" />
+                  <line x1="18" y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="1.5" />
+                </svg>
+              </span>
+              <div class="t-content">
+                <b>CIBLE</b>
+                <em>Grande Mosquée</em>
+              </div>
+              <svg class="t-chev" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 9 L12 15 L18 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
+              </svg>
+            </div>
+
+            <div class="t-row">
+              <span class="t-ico">
+                <svg viewBox="0 0 24 24">
+                  <path d="M12 2 C8 2 5 5 5 9 C5 14 12 22 12 22 C12 22 19 14 19 9 C19 5 16 2 12 2 Z" fill="none"
+                    stroke="currentColor" stroke-width="1.5" />
+                  <circle cx="12" cy="9" r="2.5" fill="currentColor" />
+                </svg>
+              </span>
+              <div class="t-content">
+                <b>POSITION</b>
+                <em>14°N · 04°W</em>
+              </div>
+              <svg class="t-chev" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 9 L12 15 L18 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
+              </svg>
+            </div>
+
+            <div class="t-row">
+              <span class="t-ico">
+                <svg viewBox="0 0 24 24">
+                  <path d="M3 9 Q6 5 9 9 T15 9 T21 9" fill="none" stroke="currentColor" stroke-width="1.5"
+                    stroke-linecap="round" />
+                  <path d="M3 14 Q6 10 9 14 T15 14 T21 14" fill="none" stroke="currentColor" stroke-width="1.5"
+                    stroke-linecap="round" opacity=".6" />
+                  <path d="M3 19 Q6 15 9 19 T15 19" fill="none" stroke="currentColor" stroke-width="1.5"
+                    stroke-linecap="round" opacity=".4" />
+                </svg>
+              </span>
+              <div class="t-content">
+                <b>VENT</b>
+                <em>04 m/s · NE</em>
+              </div>
+              <svg class="t-chev" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 9 L12 15 L18 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
+              </svg>
+            </div>
+
+            <div class="t-row">
+              <span class="t-ico">
+                <svg viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5" />
+                  <path d="M12 3 A9 9 0 0 0 12 21 Z" fill="currentColor" />
+                </svg>
+              </span>
+              <div class="t-content">
+                <b>HEURE</b>
+                <em>18:42 · MAGHRIB</em>
+              </div>
+              <svg class="t-chev" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 9 L12 15 L18 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
+              </svg>
+            </div>
+          </aside>
+
+          <!-- Visuel central : drone vue de dessus -->
+          <div class="t-center">
+            <div class="t-holo">
+              <!-- Viseur fixe -->
+              <svg class="t-target" viewBox="0 0 200 200" aria-hidden="true">
+                <defs>
+                  <radialGradient id="halo" cx="50%" cy="50%" r="60%">
+                    <stop offset="0%" stop-color="#f9d58b" stop-opacity=".45" />
+                    <stop offset="70%" stop-color="#f9d58b" stop-opacity="0" />
+                  </radialGradient>
+                </defs>
+                <circle cx="100" cy="100" r="90" fill="url(#halo)" />
+                <g stroke="#f9d58b" stroke-width="1" fill="none" opacity=".75">
+                  <circle cx="100" cy="100" r="80" />
+                  <circle cx="100" cy="100" r="50" stroke-dasharray="3 5" />
+                  <line x1="100" y1="10" x2="100" y2="30" />
+                  <line x1="100" y1="170" x2="100" y2="190" />
+                  <line x1="10" y1="100" x2="30" y2="100" />
+                  <line x1="170" y1="100" x2="190" y2="100" />
+                </g>
+              </svg>
+
+              <!-- Drone GLB 3D animé -->
+              <canvas class="t-drone-3d" id="droneCanvas"></canvas>
+            </div>
+            <div class="t-scan"></div>
+            <div class="t-pct"><b id="readyPct">98</b><span>%</span><em>SYSTÈME PRÊT</em></div>
+          </div>
+
+          <!-- Colonne droite : badge -->
+          <aside class="t-right">
+            <div class="t-badge">DRONE<br /><b id="droneMode">—</b></div>
+            <div class="t-mini">
+              <span>ALT</span><b>00m</b>
+              <span>SIG</span><b>98%</b>
+              <span>BAT</span><b>100%</b>
+            </div>
+          </aside>
+        </div>
+
+        <!-- Console défilante -->
+        <div class="t-console" id="console">
+          <span class="prompt">›</span>
+          <div class="lines" id="consoleLines"></div>
+        </div>
+
+        <!-- Barres -->
+        <div class="t-bars">
+          <div class="bar-row"><label>SIGNAL</label>
+            <div class="track"><span style="--w:98%"></span></div><b>98%</b>
+          </div>
+          <div class="bar-row"><label>BATTERIE</label>
+            <div class="track"><span style="--w:100%"></span></div><b>100%</b>
+          </div>
+          <div class="bar-row"><label>GPS</label>
+            <div class="track"><span style="--w:92%"></span></div><b>92%</b>
+          </div>
+        </div>
+
+        <!-- Pied -->
+        <footer class="t-foot">
+          <p class="t-title">DJENNÉ <small>Patrimoine · Survol 3D</small></p>
+          <p class="t-foot-stat"><span class="dot"></span>SYSTÈME PRÊT AU LANCEMENT</p>
+        </footer>
+      </div>
+
+      <!-- BOUTON CTA "DÉCOLLE LE DRONE" -->
+      <div class="cta-wrap">
+        <span class="cta-rail left"></span>
+        <button id="launchBtn" class="cta-launch" type="button" aria-label="Décolle le drone">
+          <span class="cta-ring"></span>
+          <span class="cta-ring r2"></span>
+          <span class="cta-core">
+            <svg viewBox="0 0 24 24" class="cta-arrow" aria-hidden="true">
+              <path d="M12 3 L18 11 L14 11 L14 21 L10 21 L10 11 L6 11 Z" fill="currentColor" />
+            </svg>
+          </span>
+          <span class="cta-text">
+            <em>// COMMANDE D'ENVOL</em>
+            <strong>DÉCOLLE LE DRONE</strong>
+          </span>
+          <span class="cta-energy"><i></i></span>
+          <span class="cta-chev">›</span>
+        </button>
+        <span class="cta-rail right"></span>
+      </div>
+
+      <!-- Reflet au sol -->
+      <div class="reflection" aria-hidden="true"></div>
+      <div class="dust" aria-hidden="true"></div>
+    </section>
+
+    <!-- Overlay vidéo -->
+    <div id="videoOverlay" class="video-overlay" aria-hidden="true">
+      <div class="video-frame">
+        <div class="vhud">
+          <span class="rec"><i></i> REC</span>
+          <span class="meta" id="vMeta">DRONE · 00:00</span>
+          <span class="coords">14°N · 04°W</span>
+        </div>
+        <video id="introVideo" playsinline preload="metadata"></video>
+        <button id="skipBtn" class="skip" type="button">PASSER ›</button>
+      </div>
+    </div>
+
+    <!-- Vue mosquée (apparaît à la fin de la vidéo intro) -->
+    <div id="mosqueOverlay" class="mosque-overlay" aria-hidden="true">
+      <canvas id="mosqueCanvas"></canvas>
+      <div id="mosqueLoader" class="mosque-loader">CHARGEMENT DE LA MOSQUÉE...</div>
+    </div>
+
+    <!-- Voile de boot -->
+    <div id="boot" class="boot">
+      <div class="boot-box">
+        <p class="boot-title">DJENNÉ · RECON SYS</p>
+        <p class="boot-sub">Initialisation du tableau de commande</p>
+        <div class="boot-log" id="bootLog"></div>
+        <div class="boot-bar"><span id="bootBar"></span></div>
+        <p class="boot-status" id="bootStatus">BOOT 0%</p>
+      </div>
+    </div>
+
+    <!-- Bouton son -->
+    <button id="soundToggle" class="sound-btn" type="button" aria-label="Son">
+      <svg viewBox="0 0 24 24">
+        <path d="M3 9 V15 H7 L13 20 V4 L7 9 Z" fill="currentColor" />
+        <path d="M16 8 Q20 12 16 16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" />
+      </svg>
+      <span id="soundLabel">SON OFF</span>
+    </button>
+
+    <!-- Séquence de décollage : compte à rebours -->
+    <div id="liftoff" class="liftoff" aria-hidden="true">
+      <div class="lo-grid" aria-hidden="true"></div>
+      <div class="lo-noise" aria-hidden="true"></div>
+
+      <div class="lo-shake">
+        <!-- Anneaux de propulsion -->
+        <svg class="lo-thrusters" viewBox="0 0 400 400" aria-hidden="true">
+          <defs>
+            <linearGradient id="thrGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#f9d58b" stop-opacity="0" />
+              <stop offset="50%" stop-color="#f9d58b" stop-opacity="1" />
+              <stop offset="100%" stop-color="#f9d58b" stop-opacity="0" />
+            </linearGradient>
+          </defs>
+          <!-- 3 anneaux rotatifs concentriques -->
+          <circle class="thr r1" cx="200" cy="200" r="180" fill="none" stroke="url(#thrGrad)" stroke-width="3"
+            stroke-dasharray="40 16 80 24 50 30 120 20" />
+          <circle class="thr r2" cx="200" cy="200" r="150" fill="none" stroke="url(#thrGrad)" stroke-width="2"
+            stroke-dasharray="60 18 30 40 90 22" />
+          <circle class="thr r3" cx="200" cy="200" r="120" fill="none" stroke="#f9d58b" stroke-width="1.5" opacity=".6"
+            stroke-dasharray="3 8" />
+          <!-- Tics cardinaux -->
+          <g stroke="#f9d58b" stroke-width="2">
+            <line x1="200" y1="20" x2="200" y2="38" />
+            <line x1="200" y1="362" x2="200" y2="380" />
+            <line x1="20" y1="200" x2="38" y2="200" />
+            <line x1="362" y1="200" x2="380" y2="200" />
+          </g>
+          <!-- Cible centrale -->
+          <circle cx="200" cy="200" r="6" fill="#f9d58b" />
+          <circle cx="200" cy="200" r="14" fill="none" stroke="#f9d58b" stroke-width="1" />
+        </svg>
+
+        <!-- Anneau d'énergie qui se remplit -->
+        <svg class="lo-charge" viewBox="0 0 200 200" aria-hidden="true">
+          <circle cx="100" cy="100" r="92" fill="none" stroke="#f9d58b22" stroke-width="3" />
+          <circle id="liftoffCharge" cx="100" cy="100" r="92" fill="none" stroke="#f9d58b" stroke-width="3"
+            stroke-dasharray="578" stroke-dashoffset="578" stroke-linecap="round" transform="rotate(-90 100 100)"
+            style="filter:drop-shadow(0 0 8px #f9d58b)" />
+        </svg>
+
+        <!-- T-MINUS + chiffre -->
+        <div class="lo-count">
+          <span class="lo-tminus" id="liftoffTminus">T - 0:03</span>
+          <div class="lo-digit" id="liftoffDigit">3</div>
+          <span class="lo-label" id="liftoffLabel">PRÉPARATION</span>
+        </div>
+      </div>
+
+      <!-- Flash final -->
+      <div class="lo-flash" id="liftoffFlash"></div>
+    </div>
+
+  </main>
+
+  <script src="app/main.js"></script>
+  <script type="module" src="app/drone-viewer.js"></script>
+  <script type="module" src="app/mosque-viewer.js"></script>
+</body>
+
+</html>

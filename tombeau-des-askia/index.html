@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Askia Mohamed — Empire Songhaï</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,700;0,900;1,700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg:      #07050f;
+            --accent:  #6c63ff;
+            --accent2: #c4aff8;
+            --gold:    #f9d58b;
+            --text:    #f0eaf8;
+            --muted:   #9490b8;
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+        }
+
+        /* ── LAYOUT ── */
+        .scene {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg);
+            overflow: hidden;
+        }
+
+        /* ── TOP BAR ── */
+        .top-bar {
+            width: 100%;
+            padding: 24px 50px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 10;
+            border-bottom: 1px solid rgba(196,175,248,0.05);
+        }
+        .top-label {
+            font-size: 0.68rem;
+            letter-spacing: 0.35em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+        .top-center {
+            font-size: 0.72rem;
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            color: var(--text);
+        }
+
+        /* ── MAIN AREA ── */
+        .main-area {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            padding: 0 50px 0 50px;
+            overflow: hidden;
+        }
+
+        /* ── "GAO" / année géante — fond décoratif haut-gauche ── */
+        .hero-gao {
+            position: absolute;
+            top: -2%;
+            left: 30px;
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(9rem, 20vw, 17rem);
+            font-weight: 900;
+            color: transparent;
+            -webkit-text-stroke: 1px rgba(196,175,248,0.12);
+            background: linear-gradient(160deg,
+                rgba(196,175,248,0.42) 0%,
+                rgba(108,99,255,0.18) 55%,
+                transparent 85%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            line-height: 1;
+            letter-spacing: -0.02em;
+            z-index: 2;
+            pointer-events: none;
+            will-change: transform, opacity;
+            text-shadow: none;
+            white-space: nowrap;
+        }
+
+        /* ── MODÈLE 3D ── */
+        .model-wrap {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 65%;
+            height: 100%;
+            z-index: 3;
+        }
+
+        /* Lueur violette atmosphérique derrière le modèle */
+        .bg-glow {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: -10%;
+            right: -15%;
+            background: radial-gradient(ellipse 70% 65% at 65% 42%,
+                rgba(140, 30, 230, 0.85) 0%,
+                rgba(100, 10, 190, 0.60) 22%,
+                rgba(60,   5, 140, 0.30) 45%,
+                transparent 70%);
+            filter: blur(48px);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        model-viewer {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            --poster-color: transparent;
+            position: relative;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+        model-viewer.loaded { opacity: 1; }
+
+        .light-right { display: none; }
+
+        /* ── TEXTE HÉROS ── */
+        .hero-text {
+            position: relative;
+            z-index: 5;
+            padding-bottom: 56px;
+            max-width: 48%;
+            padding-left: 22px;
+            border-left: 1px solid rgba(196,175,248,0.10);
+        }
+        /* Accent doré en haut du bloc texte */
+        .hero-text::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -1px;
+            width: 1px; height: 40px;
+            background: linear-gradient(to bottom, var(--gold), transparent);
+        }
+
+        /* Numéro/tag de chapitre */
+        .chapter-tag {
+            font-size: 0.58rem;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+            color: var(--accent2);
+            margin-bottom: 18px;
+            min-height: 1.2em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            will-change: transform, opacity;
+        }
+        .ch-index {
+            font-family: 'Playfair Display', serif;
+            font-size: 0.72rem;
+            letter-spacing: 0.12em;
+            color: rgba(249,213,139,0.75);
+            font-weight: 400;
+            font-style: italic;
+        }
+        .ch-sep {
+            color: rgba(196,175,248,0.25);
+            font-size: 0.6rem;
+        }
+        .ch-subtitle {
+            letter-spacing: 0.32em;
+            font-size: 0.58rem;
+            color: var(--accent2);
+        }
+
+        .hero-title {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(2.6rem, 5vw, 4.6rem);
+            font-weight: 900;
+            line-height: 0.98;
+            letter-spacing: -0.01em;
+            color: #fff;
+            text-transform: uppercase;
+            overflow: hidden;
+            min-height: 3em;
+        }
+
+        .title-line {
+            display: block;
+            overflow: hidden;
+            line-height: 1.08;
+        }
+        .title-line span {
+            display: inline-block;
+            will-change: transform, opacity;
+        }
+
+        /* Ligne dorée avec losange */
+        .title-divider {
+            height: 1px;
+            background: linear-gradient(90deg, var(--gold), rgba(196,175,248,0.6), transparent);
+            margin: 22px 0;
+            position: relative;
+            will-change: width, opacity;
+        }
+        .title-divider::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 50%;
+            transform: translateY(-50%) rotate(45deg);
+            width: 5px; height: 5px;
+            background: var(--gold);
+            box-shadow: 0 0 6px rgba(249,213,139,0.6);
+        }
+
+        .hero-desc {
+            font-size: 0.88rem;
+            line-height: 1.78;
+            color: rgba(148,163,184,0.85);
+            font-weight: 300;
+            max-width: 330px;
+            will-change: transform, opacity;
+            padding-left: 14px;
+            border-left: 2px solid rgba(249,213,139,0.18);
+        }
+
+        /* Bouton enquête */
+        .btn-enquete {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 28px;
+            padding: 12px 28px;
+            border-radius: 50px;
+            border: 1.5px solid rgba(196,175,248,0.5);
+            background: rgba(108,99,255,0.15);
+            color: var(--accent2);
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            will-change: opacity;
+        }
+        .btn-enquete:hover {
+            background: rgba(108,99,255,0.3);
+            border-color: var(--accent2);
+            color: var(--text);
+            box-shadow: 0 0 24px rgba(108,99,255,0.3);
+        }
+        .btn-enquete::before {
+            content: '';
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--accent2);
+            box-shadow: 0 0 8px var(--accent2);             
+        }
+
+        .btn-experience {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            padding: 11px 24px;
+            border-radius: 50px;
+            border: 1.5px solid rgba(249,213,139,0.4);
+            background: rgba(249,213,139,0.08);
+            color: var(--gold);
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        .btn-experience:hover {
+            background: rgba(249,213,139,0.18);
+            border-color: var(--gold);
+            color: var(--text);
+            box-shadow: 0 0 24px rgba(249,213,139,0.2);
+        }
+        .btn-experience::before {
+            content: '';
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--gold);
+            box-shadow: 0 0 8px var(--gold);
+        }
+
+        /* ── NAVIGATION DOTS ── */
+        .nav-dots {
+            display: flex;
+            gap: 10px;
+            margin-top: 28px;
+            align-items: center;
+        }
+        .dot {
+            width: 5px; height: 5px;
+            border-radius: 50%;
+            background: rgba(196,175,248,0.2);
+            border: 1px solid rgba(196,175,248,0.15);
+            transition: all 0.45s cubic-bezier(0.4,0,0.2,1);
+            cursor: pointer;
+        }
+        .dot:hover:not(.active) {
+            background: rgba(196,175,248,0.35);
+            transform: scale(1.3);
+        }
+        .dot.active {
+            width: 28px;
+            border-radius: 3px;
+            background: linear-gradient(90deg, var(--gold), var(--accent2));
+            border-color: transparent;
+            box-shadow: 0 0 10px rgba(196,175,248,0.35), 0 0 20px rgba(108,99,255,0.2);
+        }
+
+        /* ── TOGGLE MODÈLE ── */
+        .toggle-label {
+            font-size: 0.58rem;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: rgba(148,163,184,0.45);
+            transition: color 0.3s ease;
+        }
+        .toggle-label.active {
+            color: var(--accent2);
+            text-shadow: 0 0 12px rgba(196,175,248,0.4);
+        }
+        /* ── TOGGLE MODÈLE ── */
+        .model-toggle {
+            position: absolute;
+            bottom: 32px;
+            right: 32px;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            transition: opacity 0.5s ease;
+        }
+        body.ch4 .model-toggle {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .toggle-arrow {
+            width: 38px; height: 38px;
+            border-radius: 50%;
+            border: 1.5px solid rgba(196,175,248,0.4);
+            background: rgba(108,99,255,0.12);
+            backdrop-filter: blur(10px);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .toggle-arrow:hover {
+            background: rgba(108,99,255,0.28);
+            border-color: var(--accent2);
+            box-shadow: 0 0 18px rgba(108,99,255,0.35);
+        }
+        .toggle-arrow svg {
+            width: 16px; height: 16px;
+            stroke: var(--accent2);
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* ── BOTTOM BAR ── */
+        .bottom-bar {
+            width: 100%;
+            padding: 0 50px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 10;
+        }
+        .bottom-label {
+            font-size: 0.65rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: rgba(148,163,184,0.5);
+        }
+        .bottom-year {
+            font-family: 'Playfair Display', serif;
+            font-size: 0.72rem;
+            font-style: italic;
+            color: rgba(249,213,139,0.55);
+            letter-spacing: 0.2em;
+            transition: all 0.5s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .bottom-year::before,
+        .bottom-year::after {
+            content: '';
+            width: 18px; height: 1px;
+            background: rgba(249,213,139,0.25);
+        }
+
+        /* ══ NAVIGATION PAR CHEVRONS — style fast-forward ══ */
+        .nav-ctrl {
+            position: fixed;
+            right: 22px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            z-index: 30;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.9s ease;
+        }
+        .nav-ctrl.visible { opacity: 1; pointer-events: all; }
+
+        /* ── Bouton chevrons empilés ── */
+        .nav-btn {
+            background: none; border: none; padding: 5px 3px;
+            cursor: pointer; outline: none;
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.22s ease, opacity 0.3s ease;
+        }
+        .nav-btn:disabled { opacity: 0.09; cursor: default; pointer-events: none; }
+        .nav-btn:hover:not(:disabled)  { transform: scale(1.16); }
+        .nav-btn:active:not(:disabled) { transform: scale(0.88); }
+
+        /* SVG commun */
+        .nav-btn svg {
+            width: 28px; height: 40px;
+            overflow: visible;
+            transition: filter 0.3s ease;
+        }
+        .nav-btn:hover:not(:disabled) svg {
+            filter: drop-shadow(0 0 9px rgba(196,175,248,0.95));
+        }
+
+        /* Chevrons individuels — opacité cascade */
+        .ch {
+            stroke: var(--accent2);
+            stroke-width: 4.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+            transition: stroke 0.28s ease, opacity 0.38s ease;
+        }
+        .c1 { opacity: 0.20; stroke-width: 2.6; }
+        .c2 { opacity: 0.52; stroke-width: 3.4; }
+        .c3 { opacity: 1.00; stroke-width: 4.5; }
+
+        .nav-btn:hover:not(:disabled) .ch { stroke: #fff; }
+        .nav-btn:hover:not(:disabled) .c1 { opacity: 0.38; }
+        .nav-btn:hover:not(:disabled) .c2 { opacity: 0.70; }
+        .nav-btn:hover:not(:disabled) .c3 { opacity: 1.00; }
+
+        /* Dot SVG */
+        .nav-dot-svg {
+            fill: var(--accent2);
+            opacity: 0.40;
+            transition: fill 0.28s ease, opacity 0.28s ease;
+        }
+        .nav-btn:hover:not(:disabled) .nav-dot-svg { fill: #fff; opacity: 0.80; }
+
+        /* ── Barre de progression ── */
+        .nav-track {
+            width: 2px; height: 72px;
+            background: rgba(196,175,248,0.09);
+            border-radius: 2px;
+            position: relative;
+        }
+        .nav-track-fill {
+            position: absolute; top: 0; left: 0; width: 100%;
+            height: 20%;
+            background: linear-gradient(to bottom, rgba(196,175,248,0.9), rgba(108,99,255,0.7));
+            border-radius: 2px;
+            transition: height 0.7s cubic-bezier(0.4,0,0.2,1);
+            box-shadow: 0 0 10px rgba(140,30,230,0.6), 0 0 22px rgba(140,30,230,0.25);
+        }
+        .nav-track-dot {
+            position: absolute; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 7px; height: 7px; border-radius: 50%;
+            background: #c4aff8;
+            box-shadow: 0 0 8px rgba(196,175,248,0.9), 0 0 18px rgba(140,30,230,0.6);
+            top: 20%;
+            transition: top 0.7s cubic-bezier(0.4,0,0.2,1);
+            animation: dotPulse 2s ease-in-out infinite;
+        }
+        @keyframes dotPulse {
+            0%,100% { box-shadow: 0 0 8px rgba(196,175,248,0.9), 0 0 18px rgba(140,30,230,0.6); }
+            50%      { box-shadow: 0 0 14px rgba(196,175,248,1),  0 0 30px rgba(140,30,230,0.9); }
+        }
+        @keyframes navScan {
+            0%   { top: -5%;  opacity: 0; }
+            12%  { opacity: 0.85; }
+            88%  { opacity: 0.85; }
+            100% { top: 105%; opacity: 0; }
+        }
+
+        /* ── Compteur chapitre ── */
+        .nav-chap {
+            display: flex; flex-direction: column;
+            align-items: center; gap: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        #nav-idx {
+            font-size: 0.68rem; letter-spacing: 0.12em;
+            color: var(--accent2); font-weight: bold;
+            text-shadow: 0 0 10px rgba(196,175,248,0.5);
+            transition: color 0.4s ease;
+        }
+        .nav-sep-line {
+            width: 1px; height: 10px;
+            background: linear-gradient(to bottom, rgba(196,175,248,0.3), transparent);
+        }
+        .nav-total {
+            font-size: 0.46rem; letter-spacing: 0.14em;
+            color: rgba(196,175,248,0.28);
+        }
+
+        /* ══ ANIMATIONS PEPS ══ */
+
+        /* 1 — Cascade de chevrons : c3 (direction) s'allume en premier */
+        @keyframes c1Pulse { 0%,100%{opacity:0.12} 40%,60%{opacity:0.55} }
+        @keyframes c2Pulse { 0%,100%{opacity:0.38} 40%,60%{opacity:0.88} }
+        @keyframes c3Pulse { 0%,100%{opacity:0.78} 40%,60%{opacity:1.00} }
+
+        .nav-btn:not(:hover):not(:disabled) .c1 { animation: c1Pulse 1.35s ease-in-out infinite 0.44s; }
+        .nav-btn:not(:hover):not(:disabled) .c2 { animation: c2Pulse 1.35s ease-in-out infinite 0.22s; }
+        .nav-btn:not(:hover):not(:disabled) .c3 { animation: c3Pulse 1.35s ease-in-out infinite 0s;    }
+
+        /* 2 — Dot pulse synchronisé */
+        @keyframes dotGlow { 0%,100%{opacity:0.25} 50%{opacity:0.92} }
+        .nav-btn:not(:hover):not(:disabled) .nav-dot-svg {
+            animation: dotGlow 1.35s ease-in-out infinite;
+        }
+
+        /* 3 — Rebond directionnel du bouton entier */
+        @keyframes bounceUp   { 0%,100%{transform:translateY(0)}  50%{transform:translateY(-7px)} }
+        @keyframes bounceDown { 0%,100%{transform:translateY(0)}  50%{transform:translateY(7px)}  }
+
+        #nav-prev:not(:hover):not(:disabled) { animation: bounceUp   2s ease-in-out infinite; }
+        #nav-next:not(:hover):not(:disabled) { animation: bounceDown 2s ease-in-out infinite; }
+
+
+        /* ══ CHAPITRE 4 — OVERLAY PYRAMIDE ══ */
+        #ch4-overlay {
+            position: fixed; inset: 0;
+            z-index: 4; pointer-events: none;
+            opacity: 0; transition: opacity 1s ease;
+        }
+        #ch4-overlay.visible { opacity: 1; }
+
+        /* Grille dorée */
+        .ch4-grid {
+            position: absolute; inset: 0;
+            background-image:
+                linear-gradient(rgba(249,213,139,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(249,213,139,0.04) 1px, transparent 1px);
+            background-size: 56px 56px;
+        }
+
+        /* Pyramide */
+        .ch4-pyramid {
+            position: absolute;
+            right: -4%;
+            bottom: 0;
+            width: 68%;
+            max-width: 820px;
+            opacity: 0.82;
+            filter: sepia(0.25) saturate(1.1) brightness(0.92);
+            transform-origin: bottom right;
+        }
+
+        /* Lueur dorée derrière la pyramide */
+        .ch4-glow {
+            position: absolute;
+            right: 0; bottom: 0;
+            width: 70%; height: 80%;
+            background: radial-gradient(ellipse 65% 55% at 65% 75%,
+                rgba(249,213,139,0.18) 0%,
+                rgba(180,120,40,0.08)  40%,
+                transparent 70%);
+            filter: blur(40px);
+        }
+
+        /* Ligne de connexion — trait doré vertical gauche */
+        .ch4-line { display: none; }
+
+/* Mobile */
+        @media (max-width: 768px) {
+            .ch4-pyramid {
+                width: 110%;
+                right: -5%;
+                bottom: 22%;
+                opacity: 0.55;
+            }
+            .ch4-peak-glow {
+                width: 110%;
+                right: -5%;
+                bottom: 22%;
+            }
+            .ch4-line { display: none; }
+        }
+
+        /* ══ CHAPITRE 5 — Le Monument ══ */
+        #ch5-overlay {
+            position: fixed; inset: 0; z-index: 4; pointer-events: none;
+            opacity: 0; transition: opacity 1s ease;
+        }
+        #ch5-overlay.visible { opacity: 1; }
+        .ch5-tombeau {
+            position: absolute;
+            bottom: 0; right: -2%;
+            width: 72%; max-width: 920px;
+            opacity: 0.88;
+            filter: sepia(0.15) saturate(1.05) brightness(0.88);
+            transform-origin: bottom right;
+        }
+        .ch5-glow {
+            position: absolute;
+            right: 0; bottom: 0;
+            width: 76%; height: 72%;
+            background: radial-gradient(ellipse 70% 55% at 60% 80%,
+                rgba(180,110,30,0.22) 0%,
+                rgba(249,213,139,0.08) 45%,
+                transparent 70%);
+            filter: blur(55px);
+        }
+        /* Bouton personnage caché en ch5 */
+        body.ch5 #btn-personnage { display: none; }
+
+        body.ch5 .model-toggle { opacity: 0; pointer-events: none; }
+        body.ch5 .hero-gao { font-size: clamp(5rem, 14vw, 14rem); letter-spacing: -0.03em; }
+
+        @media (max-width: 768px) {
+            .ch5-tombeau { width: 105%; right: -3%; bottom: 35%; opacity: 0.55; }
+            body.ch5 .hero-gao { font-size: clamp(2.8rem, 10vw, 5rem); letter-spacing: -0.02em; }
+        }
+
+        /* ── Taille hero-gao adaptée au chapitre 4 (mot long) ── */
+        body.ch4 .hero-gao {
+            font-size: clamp(5rem, 14vw, 14rem);
+            letter-spacing: -0.03em;
+        }
+        @media (max-width: 768px) {
+            body.ch4 .hero-gao {
+                font-size: clamp(2.4rem, 9.5vw, 5rem);
+                letter-spacing: -0.02em;
+            }
+        }
+
+
+        /* ══ RESPONSIVE MOBILE ══ */
+        @media (max-width: 768px) {
+
+            .top-bar { padding: 14px 20px 0; }
+            .top-label { display: none; }
+            .top-center { font-size: 0.62rem; letter-spacing: 0.25em; }
+
+            .main-area { padding: 0; }
+
+            /* model-wrap pleine largeur — évite la coupure du modèle */
+            .model-wrap {
+                width: 100%;
+                height: 100%;
+                top: 0;
+                right: 0;
+                left: 0;
+                opacity: 1;
+            }
+
+            /* pleine largeur — pas de boîte, pas de coupure */
+            #mv {
+                width: 100%;
+                margin-left: 0;
+                transform: none;
+            }
+
+            .bg-glow {
+                width: 100%;
+                right: 0;
+                left: 0;
+                top: -10%;
+                transform: none;
+            }
+
+            /* GAO géant — bien visible sur mobile */
+            .hero-gao {
+                font-size: clamp(4.5rem, 22vw, 8rem);
+                top: 6%;
+                left: 8px;
+                right: auto;
+                transform: none;
+                clip-path: none;
+                /* Couleur plus opaque sur mobile pour lisibilité */
+                -webkit-text-stroke: 1px rgba(196,175,248,0.55);
+                background: linear-gradient(160deg,
+                    rgba(196,175,248,0.85) 0%,
+                    rgba(108,99,255,0.55) 55%,
+                    rgba(108,99,255,0.20) 100%);
+                -webkit-background-clip: text;
+                background-clip: text;
+            }
+
+            /* Toggle compact dans le coin haut-droit du modèle */
+            .model-toggle {
+                position: absolute;
+                top: 12px;
+                right: 12px;
+                bottom: auto;
+                gap: 6px;
+                z-index: 20;
+            }
+            .toggle-label { display: none; }
+            .toggle-arrow { width: 30px; height: 30px; }
+
+            /* Texte en overlay bas pleine largeur */
+            .hero-text {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                max-width: 100%;
+                padding: 100px 22px 18px;
+                padding-left: 22px;
+                border-left: none;
+                background: linear-gradient(to top,
+                    rgba(7,5,15,1.0)  52%,
+                    rgba(7,5,15,0.65) 74%,
+                    transparent       100%);
+                z-index: 5;
+            }
+            .hero-text::before { display: none; }
+
+            .hero-title {
+                font-size: clamp(1.9rem, 7.5vw, 3rem);
+                min-height: unset;
+            }
+
+            .title-divider { margin: 10px 0; }
+
+            .hero-desc {
+                font-size: 0.82rem;
+                max-width: 100%;
+                display: block;
+                overflow: visible;
+                border-left: none;
+                padding-left: 0;
+            }
+
+            .btn-enquete    { margin-top: 16px; padding: 11px 22px; font-size: 0.64rem; }
+            .btn-experience { margin-top: 10px; padding: 10px 20px; font-size: 0.62rem; }
+            .nav-dots { margin-top: 14px; }
+
+            .bottom-bar {
+                padding: 0 20px 14px;
+                background: rgba(7,5,15,0.85);
+            }
+            .bottom-label { font-size: 0.55rem; letter-spacing: 0.2em; }
+            .nav-ctrl { right: 8px; gap: 10px; }
+            .nav-btn  { width: 38px; height: 38px; }
+            .nav-btn-inner { width: 38px; height: 38px; }
+            .nav-track { height: 60px; }
+        }
+
+        /* ── Très petits écrans (≤ 480px) ── */
+        @media (max-width: 480px) {
+            #mv          { width: 100%; transform: none; }
+            .hero-gao    { font-size: clamp(3.8rem, 20vw, 6.5rem); top: 8%; }
+            .hero-title  { font-size: clamp(1.7rem, 7.5vw, 2.5rem); }
+            .hero-text   { padding: 90px 18px 14px; }
+            .hero-desc   { font-size: 0.78rem; }
+            .btn-enquete, .btn-experience { padding: 10px 18px; font-size: 0.61rem; }
+        }
+
+        /* ══════════════════════════════════════════
+           ÉCRAN DE DÉMARRAGE
+        ══════════════════════════════════════════ */
+        #scroll-invite {
+            position: fixed;
+            inset: 0;
+            z-index: 400;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(7,5,15,0.95);
+            backdrop-filter: blur(10px);
+            cursor: default;
+            transform-origin: center center;
+        }
+        #scroll-invite.out {
+            pointer-events: none;
+            animation: smokeRise 1.6s ease-in forwards;
+        }
+        @keyframes smokeRise {
+            0%   {
+                transform: translateY(0)    scale(1.00);
+                opacity: 1;
+                filter: blur(0px);
+            }
+            15%  {
+                transform: translateY(-3%)  scale(1.01);
+                opacity: 0.92;
+                filter: blur(2px);
+            }
+            45%  {
+                transform: translateY(-12%) scale(1.05);
+                opacity: 0.55;
+                filter: blur(12px);
+            }
+            75%  {
+                transform: translateY(-24%) scale(1.09);
+                opacity: 0.20;
+                filter: blur(28px);
+            }
+            100% {
+                transform: translateY(-38%) scale(1.13);
+                opacity: 0;
+                filter: blur(48px);
+            }
+        }
+
+        .si-logo {
+            width: clamp(90px,16vw,150px);
+            margin-bottom: 36px;
+        }
+        .si-title {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(1.8rem,5vw,3.4rem);
+            color: #f0eaf8;
+            text-align: center;
+            letter-spacing: 0.04em;
+            margin-bottom: 10px;
+            font-style: italic;
+        }
+        .si-title em { color: #f9d58b; font-style: normal; }
+        .si-sub {
+            font-size: 0.58rem;
+            letter-spacing: 0.42em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.32);
+            margin-bottom: 64px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .si-sub::before, .si-sub::after {
+            content: '';
+            width: 22px; height: 1px;
+            background: rgba(249,213,139,0.25);
+        }
+        /* Chevrons intro — même style que les boutons nav, en grand */
+        .si-arrow-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+        }
+        .si-chevrons-svg {
+            width: 32px; height: 46px;
+            overflow: visible;
+            cursor: pointer;
+            padding: 12px;
+            box-sizing: content-box;
+            animation: siBounceDown 2s ease-in-out infinite;
+            filter: drop-shadow(0 0 12px rgba(196,175,248,0.45));
+        }
+        @keyframes siBounceDown {
+            0%,100% { transform: translateY(0);   }
+            50%     { transform: translateY(9px);  }
+        }
+
+        /* Traits des chevrons intro */
+        .si-ch {
+            stroke: var(--accent2);
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+        }
+        .si-ch.c1 { stroke-width: 2.6; }
+        .si-ch.c2 { stroke-width: 3.4; }
+        .si-ch.c3 { stroke-width: 4.5; }
+
+        /* Cascade d'opacité synchronisée avec les boutons */
+        @keyframes siC1 { 0%,100%{opacity:0.12} 40%,60%{opacity:0.52} }
+        @keyframes siC2 { 0%,100%{opacity:0.38} 40%,60%{opacity:0.88} }
+        @keyframes siC3 { 0%,100%{opacity:0.78} 40%,60%{opacity:1.00} }
+
+        .si-ch.c1 { animation: siC1 1.35s ease-in-out infinite 0.44s; }
+        .si-ch.c2 { animation: siC2 1.35s ease-in-out infinite 0.22s; }
+        .si-ch.c3 { animation: siC3 1.35s ease-in-out infinite 0s;    }
+
+        /* Dot intro */
+        .si-ch-dot {
+            fill: var(--accent2);
+            animation: siDotPulse 1.35s ease-in-out infinite;
+        }
+        @keyframes siDotPulse { 0%,100%{opacity:0.25} 50%{opacity:0.92} }
+
+        .si-scroll-text {
+            font-size: 0.55rem;
+            letter-spacing: 0.46em;
+            text-transform: uppercase;
+            color: rgba(196,175,248,0.45);
+            animation: siTextBlink 2.2s ease-in-out infinite;
+        }
+        @keyframes siTextBlink {
+            0%,100% { opacity: 0.3; }
+            50%     { opacity: 1;   }
+        }
+
+    </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     ÉCRAN DE DÉMARRAGE — disparaît au premier scroll
+══════════════════════════════════════════════ -->
+<div id="scroll-invite">
+  <img src="assets/images/logo-kabakoo.png" class="si-logo" alt="Kabakoo" />
+  <h2 class="si-title">Tombeau des <em>Askia</em></h2>
+  <p class="si-sub">Empire Songhaï · 1495 · Gao, Mali</p>
+  <div class="si-arrow-wrap">
+    <svg class="si-chevrons-svg" viewBox="0 0 30 43" fill="none">
+      <circle cx="15" cy="3"  r="2.5"      class="si-ch-dot"/>
+      <polyline points="11,9  15,14 19,9"  class="si-ch c1"/>
+      <polyline points="7,17  15,25 23,17" class="si-ch c2"/>
+      <polyline points="2,30  15,42 28,30" class="si-ch c3"/>
+    </svg>
+    <p class="si-scroll-text">Cliquer pour explorer</p>
+  </div>
+</div>
+
+<div class="scene">
+
+    <!-- Top bar -->
+    <div class="top-bar">
+        <span class="top-label">Conservation du patrimoine</span>
+        <span class="top-center">Askia Mohamed — Empire Songhaï</span>
+        <span class="top-label">Gao historique</span>
+    </div>
+
+    <!-- Zone principale -->
+    <div class="main-area">
+
+        <div class="hero-gao" id="hero-gao">GAO</div>
+
+        <!-- Modèle -->
+        <div class="model-wrap">
+            <!-- Lueur violette derrière le modèle -->
+            <div class="bg-glow"></div>
+
+            <model-viewer
+                id="mv"
+                src="assets/3d/Askia_Mohamed_draw.glb"
+                camera-orbit="90deg 85deg 2.2m"
+                interpolation-decay="200"
+                interaction-prompt="none"
+                shadow-intensity="1.2"
+                exposure="0.65"
+                tone-mapping="commerce">
+
+            </model-viewer>
+
+            <!-- Lumière violette depuis la droite -->
+            <div class="light-right"></div>
+
+            <div class="model-toggle">
+                <span class="toggle-label active" id="lbl-draw">Dessin</span>
+                <button class="toggle-arrow" id="arrow-left" title="Précédent">
+                    <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <button class="toggle-arrow" id="arrow-right" title="Suivant">
+                    <svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+                </button>
+                <span class="toggle-label" id="lbl-real">Réel</span>
+            </div>
+        </div>
+
+        <!-- Texte héros -->
+        <div class="hero-text">
+            <div class="chapter-tag" id="ch-tag"></div>
+            <h1 class="hero-title" id="ch-title">
+                <span class="title-line"><span>Askia Mohamed</span></span>
+                <span class="title-line"><span>Roi des Rois</span></span>
+            </h1>
+            <div class="title-divider" id="ch-divider" style="width:200px;"></div>
+            <p class="hero-desc" id="ch-desc">L'empereur bâtisseur,<br>réformateur de l'Afrique de l'Ouest.</p>
+            <a class="btn-experience" id="btn-personnage" href="experience-personnage.html">Explorer le personnage</a>
+            <div class="nav-dots" id="nav-dots"></div>
+        </div>
+
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="bottom-bar">
+        <span class="bottom-label">Conservation du patrimoine</span>
+        <span class="bottom-year" id="bottom-year">1495 · Gao · Mali</span>
+        <span class="bottom-label">Gao historique</span>
+    </div>
+
+</div>
+
+
+<!-- ══ OVERLAY CHAPITRE 4 : PYRAMIDES ══ -->
+<div id="ch4-overlay">
+    <div class="ch4-grid"></div>
+    <div class="ch4-glow"></div>
+    <div class="ch4-line"></div>
+    <img class="ch4-pyramid" src="assets/images/pyramide.png" alt="Pyramides de Gizeh" />
+</div>
+
+<div id="ch5-overlay">
+    <div class="ch5-glow"></div>
+    <img class="ch5-tombeau" src="assets/images/tombeaux.png" alt="Tombeau des Askia" />
+</div>
+
+
+
+<!-- Navigation par flèches futuristes -->
+<div class="nav-ctrl" id="nav-ctrl">
+
+    <!-- Bouton HAUT : 3 chevrons ∧∧∧ + point en bas (tailles croissantes vers le haut) -->
+    <button class="nav-btn" id="nav-prev" title="Chapitre précédent" disabled>
+        <svg viewBox="0 0 30 43" fill="none">
+            <polyline points="11,34 15,29 19,34" class="ch c1"/>
+            <polyline points="7,26  15,18 23,26" class="ch c2"/>
+            <polyline points="2,13  15,1  28,13" class="ch c3"/>
+            <circle cx="15" cy="40" r="2.5"      class="nav-dot-svg"/>
+        </svg>
+    </button>
+
+    <div class="nav-track">
+        <div class="nav-track-fill" id="sb-progress"></div>
+        <div class="nav-track-dot"  id="sb-dot"></div>
+    </div>
+
+    <div class="nav-chap">
+        <span id="nav-idx">01</span>
+        <span class="nav-sep-line"></span>
+        <span class="nav-total">05</span>
+    </div>
+
+    <!-- Bouton BAS : point en haut + 3 chevrons ∨∨∨ (tailles croissantes vers le bas) -->
+    <button class="nav-btn" id="nav-next" title="Chapitre suivant">
+        <svg viewBox="0 0 30 43" fill="none">
+            <circle cx="15" cy="3"  r="2.5"      class="nav-dot-svg"/>
+            <polyline points="11,9  15,14 19,9"  class="ch c1"/>
+            <polyline points="7,17  15,25 23,17" class="ch c2"/>
+            <polyline points="2,30  15,42 28,30" class="ch c3"/>
+        </svg>
+    </button>
+
+</div>
+
+<script>
+/* ══════════════════════════════════════════════
+   CHAPITRES — données tirées du rapport historique
+══════════════════════════════════════════════ */
+const CHAPTERS = [
+    {
+        gao:    "GAO",
+        tag:    "",
+        camera: "90deg 85deg 2.2m",
+        lines:  ["Askia Mohamed", "Roi des Rois"],
+        desc:   "L'empereur bâtisseur,\nréformateur de l'Afrique de l'Ouest.",
+        btn:    true,
+        year:   "1495 · Gao · Mali"
+    },
+    {
+        gao:    "1493",
+        tag:    "La prise du pouvoir",
+        camera: "45deg 82deg 2.2m",
+        lines:  ["L'Homme", "qui refusa", "d'obéir"],
+        desc:   "Mohammed Touré renverse la dynastie de Sunni Ali Ber et prend le titre d'Askia — «celui qui ne sera pas». Il fonde une nouvelle légitimité sur l'islam et la justice.",
+        btn:    false,
+        year:   "1493 · Empire Songhaï"
+    },
+    {
+        gao:    "EMPIRE",
+        tag:    "L'apogée Songhaï",
+        camera: "0deg 80deg 2.0m",
+        lines:  ["De l'Or", "et du Sel"],
+        desc:   "De Tombouctou à Agadez, l'Empire Songhaï contrôle les routes trans-sahariennes. Askia fait de Tombouctou un phare intellectuel du monde islamique.",
+        btn:    false,
+        year:   "1493 — 1528 · Apogée"
+    },
+    {
+        gao:    "PYRAMIDES",
+        tag:    "Inspiration",
+        camera: "25deg 86deg 2.5m",
+        lines:  ["Vu à La Mecque,", "Bâti à Gao"],
+        desc:   "En traversant l'Égypte lors de son pèlerinage à La Mecque, Askia Mohamed fut frappé par la grandeur des pyramides. De retour à Gao en 1495, il ordonna l'érection d'une tour pyramidale de 17 mètres en banco — terre crue, paille et bois de rônier — perpétuant l'héritage bâtisseur de l'Afrique ancienne.",
+        btn:    false,
+        year:   "1496–1498 · La Mecque → Gao"
+    },
+    {
+        gao:    "TOMBES",
+        tag:    "La Nécropole Royale",
+        camera: "60deg 84deg 2.3m",
+        lines:  ["Les Rois", "sous le Sable"],
+        desc:   "Derrière la mosquée, la cour du Tombeau abrite une nécropole dynastique. Askia Mohamed repose seul à l'intérieur de la tour, mais plusieurs de ses successeurs sont enterrés dans la cour. Le cimetière de la mosquée accueille leurs descendants et la famille Haïdara — faisant du site un lieu de mémoire impériale vivant depuis plus de 5 siècles.",
+        btn:    false,
+        year:   "XVe–XVIe siècle · Gao · Mali"
+    },
+];
+
+/* ══════════════════════════════════════════════
+   ÉTAT
+══════════════════════════════════════════════ */
+let current       = 0;
+let transitioning = false;
+let pageStarted   = false;
+
+const mv        = document.getElementById('mv');
+const heroGao   = document.getElementById('hero-gao');
+const chTag     = document.getElementById('ch-tag');
+const chTitle   = document.getElementById('ch-title');
+const chDivider = document.getElementById('ch-divider');
+const chDesc    = document.getElementById('ch-desc');
+const bottomY   = document.getElementById('bottom-year');
+const navCtrl     = document.getElementById('nav-ctrl');
+const modelToggle = document.querySelector('.model-toggle');
+const sbProgress  = document.getElementById('sb-progress');
+const sbDot       = document.getElementById('sb-dot');
+const ch4Overlay  = document.getElementById('ch4-overlay');
+const ch5Overlay  = document.getElementById('ch5-overlay');
+
+function setCh4(active) {
+    document.body.classList.toggle('ch4', active);
+
+    if (active) {
+        ch4Overlay.classList.add('visible');
+        gsap.killTweensOf(['.ch4-pyramid', '.ch4-glow', '.ch4-line']);
+
+        gsap.set('.ch4-pyramid', { x: 100, opacity: 0 });
+        gsap.set('.ch4-glow',    { opacity: 0 });
+        gsap.set('.ch4-line',    { scaleY: 0, opacity: 0, transformOrigin: 'top center' });
+
+        gsap.to('.ch4-glow',    { opacity: 1,      duration: 1.8, ease: 'power2.out',  delay: 0.2 });
+        gsap.to('.ch4-pyramid', { x: 0, opacity: 0.82, duration: 2.0, ease: 'power3.out', delay: 0.5 });
+        gsap.to('.ch4-line',    { scaleY: 1, opacity: 1, duration: 1.5, ease: 'power2.out', delay: 1.1 });
+    } else {
+        gsap.killTweensOf(['.ch4-pyramid', '.ch4-glow', '.ch4-line']);
+        gsap.to('.ch4-pyramid', { x: 60, opacity: 0, duration: 0.55, ease: 'power2.in' });
+        gsap.to('.ch4-glow',    { opacity: 0,        duration: 0.4,  ease: 'power2.in' });
+        gsap.to('.ch4-line',    { scaleY: 0, opacity: 0, duration: 0.3, ease: 'power2.in',
+            onComplete: () => ch4Overlay.classList.remove('visible')
+        });
+    }
+}
+
+function setCh5(active) {
+    document.body.classList.toggle('ch5', active);
+
+    if (launchTimer) { clearTimeout(launchTimer); launchTimer = null; }
+
+    if (active) {
+        ch5Overlay.classList.add('visible');
+        gsap.killTweensOf(['.ch5-tombeau', '.ch5-glow']);
+
+        gsap.set('.ch5-tombeau', { x: 80, opacity: 0 });
+        gsap.set('.ch5-glow',   { opacity: 0 });
+
+        gsap.to('.ch5-glow',    { opacity: 1,       duration: 2.0, ease: 'power2.out',  delay: 0.2 });
+        gsap.to('.ch5-tombeau', { x: 0, opacity: 0.88, duration: 2.2, ease: 'power3.out', delay: 0.5 });
+    } else {
+        gsap.killTweensOf(['.ch5-tombeau', '.ch5-glow']);
+        gsap.to('.ch5-tombeau', { x: 60, opacity: 0, duration: 0.55, ease: 'power2.in' });
+        gsap.to('.ch5-glow',    { opacity: 0,        duration: 0.4,  ease: 'power2.in',
+            onComplete: () => ch5Overlay.classList.remove('visible')
+        });
+    }
+}
+
+let launchTimer = null;
+
+function updateScrollBar(idx) {
+    const total = CHAPTERS.length;
+    const pct   = ((idx + 1) / total * 100).toFixed(2);
+    sbProgress.style.height = pct + '%';
+    sbDot.style.top         = pct + '%';
+    document.getElementById('nav-idx').textContent  = String(idx + 1).padStart(2, '0');
+    document.getElementById('nav-prev').disabled = idx === 0;
+    document.getElementById('nav-next').disabled = false;
+}
+const dotsWrap  = document.getElementById('nav-dots');
+
+/* ── Génère les dots ── */
+CHAPTERS.forEach((_, i) => {
+    const d = document.createElement('span');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.addEventListener('click', () => goTo(i));
+    dotsWrap.appendChild(d);
+});
+
+/* ── Caméra mobile : zoom arrière + décalage droite ── */
+const isMobile = window.innerWidth <= 768;
+
+function applyMobileCamera(orbit) {
+    if (!isMobile) return;
+    const zoomedOut = orbit.replace(/([\d.]+)m/, (_, r) => (parseFloat(r) * 2.0).toFixed(1) + 'm');
+    mv.setAttribute('camera-orbit', zoomedOut);
+    mv.setAttribute('camera-target', 'auto');
+}
+
+/* ── Chargement modèle ── */
+mv.addEventListener('load', () => {
+    mv.classList.add('loaded');
+    applyMobileCamera(CHAPTERS[current].camera);
+});
+
+
+/* ══════════════════════════════════════════════
+   TRANSITION
+══════════════════════════════════════════════ */
+function goTo(index) {
+    if (transitioning || index === current || index < 0 || index >= CHAPTERS.length) return;
+    transitioning = true;
+
+    const dir  = index > current ? 1 : -1;
+    const next = CHAPTERS[index];
+    const tl   = gsap.timeline({ onComplete: () => { transitioning = false; } });
+    const lines = chTitle.querySelectorAll('.title-line span');
+
+    /* ─── SORTIE ─── */
+    tl.to(heroGao,   { y: dir*-40, opacity: 0, duration: 0.45, ease: 'power2.in' }, 0)
+      .to(chTag,     { y: -18,     opacity: 0, duration: 0.3,  ease: 'power2.in' }, 0)
+      .to(lines,     { y: dir*-60+'%', opacity: 0, stagger: 0.07, duration: 0.4, ease: 'power2.in' }, 0.05)
+      .to(chDivider, { width: 0, opacity: 0, duration: 0.35, ease: 'power2.in' }, 0.1)
+      .to(chDesc,    { y: -16, opacity: 0, duration: 0.35, ease: 'power2.in' }, 0.15);
+
+    /* ─── MISE À JOUR ─── */
+    tl.call(() => {
+        if (isMobile) applyMobileCamera(next.camera);
+        else mv.setAttribute('camera-orbit', next.camera);
+
+        bottomY.textContent = next.year;
+        heroGao.textContent = next.gao;
+        chTag.innerHTML = index === 0 || !next.tag ? ''
+            : `<span class="ch-index">${String(index).padStart(2,'0')}</span><span class="ch-sep">—</span><span class="ch-subtitle">${next.tag}</span>`;
+        chTitle.innerHTML   = '';
+        next.lines.forEach(txt => {
+            const line  = document.createElement('span');
+            line.className = 'title-line';
+            const inner = document.createElement('span');
+            inner.textContent = txt;
+            line.appendChild(inner);
+            chTitle.appendChild(line);
+        });
+        chDesc.innerHTML = next.desc.replace('\n', '<br>');
+        dotsWrap.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === index));
+        current = index;
+        updateScrollBar(index);
+        /* Masquer le modèle 3D pour les chapitres avec overlay image */
+        const useOverlay = (index === 3 || index === 4);
+        mv.style.transition = 'opacity 0.9s ease';
+        mv.style.opacity    = useOverlay ? '0' : '';
+        document.querySelector('.bg-glow').style.opacity = useOverlay ? '0' : '';
+        setCh4(index === 3);
+        setCh5(index === 4);
+    });
+
+    /* ─── ENTRÉE ─── */
+    const eOff = dir * 50;
+    tl.fromTo(heroGao,
+        { y: -eOff, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.6, ease: 'power3.out' }, '+=0.05')
+      .fromTo(chTag,
+        { y: 14, x: 0, rotation: 0, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.4, ease: 'power3.out' }, '<0.1')
+      .fromTo(chTitle.querySelectorAll('.title-line span'),
+        { y: '80%', x: 0, rotation: 0, opacity: 0 },
+        { y: '0%', opacity: 1, stagger: 0.1, duration: 0.55, ease: 'power3.out' }, '<0.05')
+      .fromTo(chDivider,
+        { width: 0, scaleX: 1, opacity: 0 },
+        { width: 200, opacity: 1, duration: 0.6, ease: 'power2.out' }, '<0.15')
+      .fromTo(chDesc,
+        { y: 16, x: 0, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.5, ease: 'power3.out' }, '<0.1');
+}
+
+/* ══════════════════════════════════════════════
+   ENTRÉE INITIALE
+══════════════════════════════════════════════ */
+
+gsap.set(heroGao, { opacity: 0, y: 30 });
+gsap.set(chTag,   { opacity: 0, y: 14 });
+gsap.set(chDesc, { opacity: 0, y: 16 });
+gsap.set(chDivider, { width: 0, opacity: 0 });
+gsap.set(chTitle.querySelectorAll('.title-line span'), { opacity: 0, y: '80%' });
+
+const intro = gsap.timeline({ paused: true, onComplete: () => {
+    pageStarted = true;
+    navCtrl.classList.add('visible');
+} });
+intro
+    .to(heroGao, { opacity: 1, y: 0, duration: 1.0, ease: 'power3.out' })
+    .to(chTag,   { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out' }, '-=0.6')
+    .to(chTitle.querySelectorAll('.title-line span'),
+        { opacity: 1, y: '0%', stagger: 0.12, duration: 0.65, ease: 'power3.out' }, '-=0.4')
+    .to(chDivider, { width: 200, opacity: 1, duration: 0.7, ease: 'power2.out' }, '-=0.3')
+    .to(chDesc,  { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out' }, '-=0.3')
+    ;
+
+/* ══════════════════════════════════════════════
+   NAVIGATION PAR FLÈCHES
+══════════════════════════════════════════════ */
+document.getElementById('nav-prev').addEventListener('click', () => {
+    if (!pageStarted || transitioning) return;
+    goTo(current - 1);
+});
+document.getElementById('nav-next').addEventListener('click', () => {
+    if (!pageStarted || transitioning) return;
+    if (current === CHAPTERS.length - 1) {
+        window.location.href = 'tombeau-3d.html';
+        return;
+    }
+    goTo(current + 1);
+});
+
+/* Touches clavier ↑ ↓ (bonus accessibilité) */
+window.addEventListener('keydown', e => {
+    if (!pageStarted || transitioning) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') goTo(current + 1);
+    if (e.key === 'ArrowUp'   || e.key === 'ArrowLeft')  goTo(current - 1);
+});
+
+/* ══════════════════════════════════════════════
+   TOGGLE DRAW / REAL
+══════════════════════════════════════════════ */
+const models = [
+    'assets/3d/Askia_Mohamed_draw.glb',
+    'assets/3d/Askia_Mohamed_real.glb'
+];
+let modelIdx = 0;
+const lblDraw = document.getElementById('lbl-draw');
+const lblReal = document.getElementById('lbl-real');
+
+function switchModel(idx) {
+    modelIdx = idx;
+    mv.classList.remove('loaded');
+    mv.src = models[modelIdx];
+    lblDraw.classList.toggle('active', modelIdx === 0);
+    lblReal.classList.toggle('active', modelIdx === 1);
+    /* Ajuste exposition : draw (blanc) = 0.65, real (coloré) = 1.0 */
+    mv.setAttribute('exposure', modelIdx === 0 ? '0.65' : '1.0');
+    /* Réapplique la caméra du chapitre actuel après chargement */
+    mv.addEventListener('load', () => {
+        mv.classList.add('loaded');
+        if (isMobile) applyMobileCamera(CHAPTERS[current].camera);
+        else mv.setAttribute('camera-orbit', CHAPTERS[current].camera);
+    }, { once: true });
+}
+
+document.getElementById('arrow-right').addEventListener('click', () => switchModel(modelIdx === 0 ? 1 : 0));
+document.getElementById('arrow-left').addEventListener('click',  () => switchModel(modelIdx === 0 ? 1 : 0));
+
+/* ══════════════════════════════════════════════
+   PREMIER SCROLL → ferme l'écran de démarrage
+   et lance l'animation GSAP d'entrée
+══════════════════════════════════════════════ */
+(function () {
+    function onFirstInteraction() {
+        arrow.removeEventListener('click',      onFirstInteraction);
+        arrow.removeEventListener('touchstart', onFirstInteraction);
+        const si = document.getElementById('scroll-invite');
+        if (!si) return;
+        si.classList.add('out');
+        setTimeout(() => { si.style.display = 'none'; }, 1650);
+        intro.play();
+    }
+    const arrow = document.querySelector('.si-chevrons-svg');
+    arrow.addEventListener('click',      onFirstInteraction);
+    arrow.addEventListener('touchstart', onFirstInteraction, { passive: true });
+})();
+
+</script>
+</body>
+</html>

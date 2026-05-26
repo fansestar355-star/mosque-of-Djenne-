@@ -1,0 +1,35 @@
+{
+  "parent": { "database_id": "65073e08-97ca-4c60-9cf2-da1078736240" },
+  "properties": {
+    "Name": {
+      "title": [{ "text": { "content": "Rapport Dôme Musgum — 22 Avril 2026" } }]
+    }
+  },
+  "children": [
+    { "object": "block", "type": "heading_1", "heading_1": { "rich_text": [{ "text": { "content": "Rapport de travail — Dôme Musgum · 22 Avril 2026" } }] } },
+    { "object": "block", "type": "paragraph", "paragraph": { "rich_text": [{ "text": { "content": "Projet : Expérience 3D immersive du village Musgum — architecture en dôme d'argile du Cameroun/Tchad, rendue en WebGL avec Three.js." } }] } },
+    { "object": "block", "type": "divider", "divider": {} },
+
+    { "object": "block", "type": "heading_2", "heading_2": { "rich_text": [{ "text": { "content": "✅ 1. Dispersion des concessions sur tout le terrain" } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Problème : toutes les maisons et modèles étaient concentrés en un seul amas au centre de la scène (rayon max 120 unités)" } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Solution : remplacement par 6 clusters épars répartis sur le terrain (terrain = 3000×3000 unités)" } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Coordonnées des 6 clusters : (0,0), (250,-100), (-200,300), (300,250), (-350,-200), (150,400)" } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Chaque cluster a un rayon local de 20 à 140 unités — les concessions y sont distribuées aléatoirement" } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Zone de protection de 100 unités autour du dôme principal importé (GLB) en (-180,-180) conservée" } }] } },
+
+    { "object": "block", "type": "heading_2", "heading_2": { "rich_text": [{ "text": { "content": "✅ 2. Densification du village" } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Nombre de concessions : 20 → 40 (doublé pour occuper les nouveaux clusters)" } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Végétation (arbres Neem/Acacia + broussailles) : 150 → 200 éléments" } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Mélange de styles préservé : 60% dômes Musgum, 40% maisons carrées à parapet" } }] } },
+
+    { "object": "block", "type": "heading_2", "heading_2": { "rich_text": [{ "text": { "content": "✅ 3. Mise à jour GitHub" } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Repo : fansestar355-star/dome_musgum_v2 — branche main" } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Commit : feat: disperse village compounds across terrain in multiple clusters" } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Fichier modifié : index.html — 15 lignes ajoutées, 6 supprimées (+1 changement)" } }] } },
+
+    { "object": "block", "type": "divider", "divider": {} },
+    { "object": "block", "type": "heading_2", "heading_2": { "rich_text": [{ "text": { "content": "🔗 Liens du projet" } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Repo GitHub : https://github.com/fansestar355-star/dome_musgum_v2", "link": { "url": "https://github.com/fansestar355-star/dome_musgum_v2" } } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Modèle GLB dôme : https://github.com/fansestar355-star/Toguna-Assets/main/musgum.glb", "link": { "url": "https://github.com/fansestar355-star/Toguna-Assets/blob/main/musgum.glb" } } }] } }
+  ]
+}

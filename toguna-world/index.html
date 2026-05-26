@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Monde du Toguna</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --bg: #0a080d;
+            --gold: #f9d58b;
+            --white: #ffffff;
+        }
+
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background-color: var(--bg);
+            color: var(--white);
+            font-family: "Segoe UI", sans-serif;
+            overflow: hidden;
+        }
+
+        #stars-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* --- ÉCRAN D'ACCUEIL --- */
+        #story-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #1a151c 0%, #0a080d 100%);
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            transition: transform 0.8s cubic-bezier(0.85, 0, 0.15, 1);
+        }
+
+        #story-overlay.hidden-instantly {
+            display: none !important;
+        }
+
+        .story-logo {
+            height: 70px;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 0 10px var(--gold));
+        }
+
+        .story-title {
+            font-family: "Orbitron", sans-serif;
+            font-size: 1.5rem;
+            letter-spacing: 2px;
+            color: var(--gold);
+            margin: 0;
+        }
+
+        .story-instructions {
+            margin: 30px 0;
+            padding: 0 30px;
+        }
+
+        .story-instructions p {
+            margin: 15px 0;
+            font-size: 1.1rem;
+            line-height: 1.4;
+        }
+
+        .story-instructions b {
+            color: var(--gold);
+            font-size: 1.2rem;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .btn-launch {
+            font-family: "Orbitron", sans-serif;
+            padding: 15px 40px;
+            background: var(--gold);
+            border: none;
+            color: var(--bg);
+            font-size: 1.2rem;
+            font-weight: 900;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(249, 213, 139, 0.4);
+        }
+
+        /* --- INTERFACE PRINCIPALE --- */
+        header {
+            position: fixed;
+            top: 20px;
+            width: 100%;
+            text-align: center;
+            z-index: 100;
+        }
+
+        .logo-main {
+            height: 35px;
+            filter: drop-shadow(0 0 15px var(--gold));
+            animation: pulse-glow 4s infinite ease-in-out;
+        }
+
+        .nav-arrow {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 200;
+            border: 2px solid var(--gold);
+            color: var(--gold);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .arrow-left {
+            left: 15px;
+        }
+
+        .arrow-right {
+            right: 15px;
+        }
+
+        .altar {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .click-hint {
+            font-family: "Orbitron", sans-serif;
+            font-size: 0.75rem;
+            color: var(--gold);
+            letter-spacing: 3px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            animation: blink 2s infinite ease-in-out;
+            background: rgba(249, 213, 139, 0.1);
+            padding: 6px 15px;
+            border-radius: 20px;
+            border: 1px solid rgba(249, 213, 139, 0.3);
+        }
+
+        .pillar-container {
+            position: relative;
+            width: 180px;
+            height: 240px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .pillar-active {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 0 10px rgba(249, 213, 139, 0.3));
+            animation: float 5s infinite ease-in-out;
+            transition: 0.5s ease-out;
+        }
+
+        .pillar-meta {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .pillar-number {
+            font-family: "Orbitron", sans-serif;
+            font-size: 0.8rem;
+            color: rgba(249, 213, 139, 0.6);
+            letter-spacing: 3px;
+        }
+
+        .pillar-title {
+            font-family: "Orbitron", sans-serif;
+            font-size: 1.2rem;
+            color: var(--gold);
+            margin: 5px 0;
+            text-transform: uppercase;
+        }
+
+        .pillar-desc {
+            opacity: 0.8;
+            font-size: 0.9rem;
+            font-style: italic;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 0.4;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        @keyframes pulse-glow {
+
+            0%,
+            100% {
+                filter: drop-shadow(0 0 8px var(--gold));
+            }
+
+            50% {
+                filter: drop-shadow(0 0 20px var(--gold));
+            }
+        }
+
+        .fade-out {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+
+        /* --- BOUTON RETOUR TOGUNA --- */
+        #btn-retour {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 11px 24px;
+            background: rgba(10, 8, 13, 0.7);
+            border: 1.5px solid rgba(249, 213, 139, 0.5);
+            border-radius: 30px;
+            color: var(--gold);
+            font-family: "Orbitron", sans-serif;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+        }
+
+        #btn-retour:hover {
+            background: rgba(249, 213, 139, 0.12);
+            border-color: var(--gold);
+            box-shadow: 0 0 18px rgba(249, 213, 139, 0.3);
+        }
+
+        #btn-retour svg {
+            width: 14px;
+            height: 14px;
+            fill: var(--gold);
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+        if (sessionStorage.getItem("visited")) {
+            document.documentElement.style.setProperty("--overlay-display", "none");
+        }
+    </script>
+
+    <div id="story-overlay">
+        <img src="kabakoo.png" class="story-logo" />
+        <h1 class="story-title">DÉCOUVRE LE TOGUNA</h1>
+        <div class="story-instructions">
+            <p><b>TOURNE</b>Utilise les flèches pour choisir un pilier.</p>
+            <p style="color: var(--gold)">
+                <b>ENTRE DANS LE MONDE</b>Touche le pilier pour la 3D & AR !
+            </p>
+            <p><b>ÉCOUTE 🔊</b>Découvre les secrets des anciens.</p>
+        </div>
+        <button class="btn-launch" onclick="launch()">C'EST PARTI !</button>
+    </div>
+
+    <canvas id="stars-canvas"></canvas>
+    <header><img src="kabakoo.png" class="logo-main" /></header>
+
+    <div class="nav-arrow arrow-left" onclick="changePillar(-1)">‹</div>
+    <div class="nav-arrow arrow-right" onclick="changePillar(1)">›</div>
+
+    <button id="btn-retour" onclick="window.location.href='https://fansestar355-star.github.io/Toguna/?retour=1'">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+        </svg>
+        RETOUR AU TOGUNA
+    </button>
+
+    <div class="altar">
+        <div class="click-hint">Clique pour explorer ce pilier</div>
+        <div class="pillar-container" onclick="explore()">
+            <img src="img_pilier_1.png" id="main-pillar" class="pillar-active" />
+        </div>
+        <div class="pillar-meta">
+            <span id="number" class="pillar-number">1 / 8</span>
+            <h2 id="title" class="pillar-title">la figure féminine fertile</h2>
+            <p id="desc" class="pillar-desc">Celle qui donne le savoir.</p>
+        </div>
+    </div>
+
+    <script>
+        const overlay = document.getElementById("story-overlay");
+
+        if (sessionStorage.getItem("visited")) {
+            overlay.classList.add("hidden-instantly");
+        }
+
+        const pillars = [
+            {
+                img: "img_pilier_1.png",
+                title: "la figure féminine fertile",
+                desc: "Celle qui donne le savoir.",
+                url: "https://fansestar355-star.github.io/maman/",
+            },
+            {
+                img: "img_pilier_2.png",
+                title: "Gardien et au Serpent",
+                desc: "Le protecteur de la terre.",
+                url: "https://fansestar355-star.github.io/gardienetserpent/",
+            },
+            {
+                img: "img_pilier_3.png",
+                title: "la Femme au Mortier",
+                desc: "Pour préparer la nourriture.",
+                url: "https://fansestar355-star.github.io/mortier2/",
+            },
+            {
+                img: "img_pilier_4.png",
+                title: "l'Échelle de l'Ascension",
+                desc: "Le respect pour les anciens.",
+                url: "https://fansestar355-star.github.io/echelle_de_Ascension/",
+            },
+            {
+                img: "img_pilier_5.png",
+                title: "l'Ancêtre Primordial",
+                desc: "La force de la famille.",
+                url: "https://fansestar355-star.github.io/ancetre_Primordial/",
+            },
+            {
+                img: "img_pilier_6.png",
+                title: "l'Esprit Stylisé",
+                desc: "La force invisible.",
+                url: "https://fansestar355-star.github.io/esprit_stylise/",
+            },
+            {
+                img: "img_pilier_7.png",
+                title: "Signes Géométriques",
+                desc: "Les secrets de l'univers.",
+                url: "https://fansestar355-star.github.io/Signes_geometriques/",
+            },
+            {
+                img: "img_pilier_8.png",
+                title: "Le Duo (Dualité)",
+                desc: "Vivre ensemble en paix.",
+                url: "https://fansestar355-star.github.io/dualite/",
+            },
+        ];
+
+        const imgEl = document.getElementById("main-pillar");
+        let index = 0;
+
+        // Fonction réutilisable pour afficher le bon pilier
+        function updateDisplay(i) {
+            index = i;
+            imgEl.src = pillars[index].img;
+            imgEl.style.transform = "";
+            imgEl.style.opacity = "1";
+            document.getElementById("number").innerText = (index + 1) + " / 8";
+            document.getElementById("title").innerText = pillars[index].title.toUpperCase();
+            document.getElementById("desc").innerText = pillars[index].desc;
+        }
+
+        // Au chargement : restaure l'index depuis le paramètre URL ?pillar=N
+        function restoreFromURL() {
+            var params = new URLSearchParams(window.location.search);
+            var p = params.get("pillar");
+            if (p !== null) {
+                var s = parseInt(p);
+                if (!isNaN(s) && s >= 0 && s < pillars.length) {
+                    updateDisplay(s);
+                }
+            }
+        }
+        restoreFromURL();
+
+        // Gère aussi le retour via bfcache (bouton Retour du navigateur)
+        window.addEventListener("pageshow", function (event) {
+            restoreFromURL();
+        });
+
+        function launch() {
+            sessionStorage.setItem("visited", "true");
+            overlay.style.transform = "translateY(-100%)";
+        }
+
+        function changePillar(dir) {
+            imgEl.classList.add("fade-out");
+            setTimeout(function () {
+                index = (index + dir + pillars.length) % pillars.length;
+                updateDisplay(index);
+                imgEl.classList.remove("fade-out");
+            }, 300);
+        }
+
+        function explore() {
+            // Ajoute l'index dans l'URL de la page de détail (hash)
+            // pour que le bouton RETOUR puisse renvoyer l'index
+            var detailUrl = pillars[index].url;
+            if (detailUrl.indexOf("?") === -1) {
+                detailUrl += "?from_pillar=" + index;
+            } else {
+                detailUrl += "&from_pillar=" + index;
+            }
+            imgEl.style.transform = "scale(5)";
+            imgEl.style.opacity = "0";
+            setTimeout(function () { window.location.href = detailUrl; }, 500);
+        }
+
+        const canvas = document.getElementById("stars-canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        let stars = [];
+        for (let i = 0; i < 60; i++) {
+            stars.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                r: Math.random() * 1.5,
+                speedY: Math.random() * 0.15 + 0.05,
+            });
+        }
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "rgba(249, 213, 139, 0.3)";
+            stars.forEach((s) => {
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+                ctx.fill();
+                s.y += s.speedY;
+                if (s.y > canvas.height) s.y = 0;
+            });
+            requestAnimationFrame(draw);
+        }
+        draw();
+    </script>
+</body>
+
+</html>

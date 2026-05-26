@@ -1,0 +1,1649 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <title>Toguna Experience AR</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+
+    <script>
+      // S'execute AVANT le rendu : cache le popup si l'utilisateur revient des Pillars
+      if (new URLSearchParams(location.search).get("retour") || sessionStorage.getItem("toguna_visited")) {
+        document.documentElement.classList.add("skip-popup");
+      }
+    </script>
+
+    <script
+      type="module"
+      src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"
+    ></script>
+
+    <style>
+      /* Cache le popup avant rendu si retour depuis Pillars */
+      html.skip-popup #welcome-popup {
+        display: none !important;
+      }
+
+      /* --- Style Global --- */
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #55415d;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        color: #f9d58b;
+        overflow: hidden;
+      }
+
+      /* --- Visualiseur 3D --- */
+      model-viewer {
+        width: 100vw;
+        height: 100vh;
+        --poster-color: transparent;
+        transition: all 0.5s ease;
+      }
+
+      /* --- Bouton AR (Spécial iPhone/Android) --- */
+      #ar-button {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 180px;
+        padding: 0 20px 0 44px;
+        font-family: "Segoe UI", sans-serif;
+        font-size: 14px;
+        font-weight: bold;
+        color: #55415d;
+        background-color: #f9d58b;
+        height: 46px;
+        line-height: 46px;
+        border-radius: 23px;
+        border: 2px solid #f9d58b;
+        cursor: pointer;
+        box-shadow: 0 0 20px rgba(249, 213, 139, 0.5);
+        z-index: 100;
+        white-space: nowrap;
+        transition: all 0.3s ease;
+      }
+
+      #ar-button::before {
+        content: "";
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 24px;
+        height: 24px;
+        background-color: #55415d;
+        mask-image: url(https://modelviewer.dev/assets/ic_view_in_ar_new_googblue_48dp.png);
+        mask-size: contain;
+        mask-repeat: no-repeat;
+        -webkit-mask-image: url(https://modelviewer.dev/assets/ic_view_in_ar_new_googblue_48dp.png);
+        -webkit-mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        transition: all 0.3s ease;
+      }
+
+      /* --- Style du Popup d'entrée --- */
+      #welcome-popup {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(40, 30, 45, 0.85);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 4000;
+        /* Plus haut que les boutons (3000) */
+        opacity: 1;
+        transition: opacity 0.5s ease-out;
+        padding: 20px;
+      }
+
+      #welcome-content {
+        background: linear-gradient(
+          135deg,
+          rgba(85, 65, 93, 0.95),
+          rgba(50, 40, 55, 0.98)
+        );
+        border: 1px solid rgba(249, 213, 139, 0.5);
+        border-radius: 50px;
+        padding: 30px 15px;
+        /* Réduit pour éviter les coupures */
+        text-align: center;
+        width: 90%;
+        max-width: 450px;
+        max-height: 85vh;
+        /* Empêche d'être coupé */
+        overflow-y: auto;
+        box-shadow: 0 0 40px rgba(249, 213, 139, 0.3);
+      }
+
+      #welcome-content h1 {
+        font-size: clamp(1.1rem, 5vw, 2rem);
+        /* Réduit pour éviter le retour à la ligne */
+        margin-bottom: 15px;
+        letter-spacing: 1px;
+        /* Réduit */
+        white-space: nowrap;
+      }
+
+      #start-button {
+        padding: 15px 45px;
+        background: transparent;
+        border: 2px solid #f9d58b;
+        border-radius: 30px;
+        color: #f9d58b;
+        font-weight: 800;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      #start-button:hover {
+        background: #f9d58b;
+        color: #55415d;
+      }
+
+      /* --- EFFET HOLOGRAMME --- */
+      .hologram-effect {
+        filter: brightness(1.8) drop-shadow(0 0 20px #f9d58b) !important;
+        opacity: 0.6 !important;
+        animation: flicker 0.2s infinite;
+      }
+
+      @keyframes flicker {
+        0% {
+          opacity: 0.6;
+        }
+
+        50% {
+          opacity: 0.5;
+        }
+
+        100% {
+          opacity: 0.6;
+        }
+      }
+
+      #hologram-toggle {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        padding: 12px 24px;
+        background: rgba(85, 65, 93, 0.5);
+        border: 1px solid #f9d58b;
+        border-radius: 10px;
+        color: #f9d58b;
+        font-weight: bold;
+        cursor: pointer;
+        z-index: 3000;
+        backdrop-filter: blur(5px);
+        box-shadow: 0 0 10px rgba(249, 213, 139, 0.3);
+      }
+
+      /* --- HUD & EFFETS AVANCÉS (WOW EFFECT) --- */
+      #hud-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        pointer-events: none;
+        z-index: 10;
+        display: none;
+      }
+
+      #hud-overlay.active {
+        display: block;
+      }
+
+      /* Angles du HUD */
+      .hud-corner {
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        border: 2px solid rgba(249, 213, 139, 0.4);
+        animation: hud-flicker 4s infinite;
+      }
+
+      .top-left {
+        top: 40px;
+        left: 40px;
+        border-right: 0;
+        border-bottom: 0;
+      }
+
+      .top-right {
+        top: 40px;
+        right: 40px;
+        border-left: 0;
+        border-bottom: 0;
+      }
+
+      .bottom-left {
+        bottom: 40px;
+        left: 40px;
+        border-right: 0;
+        border-top: 0;
+      }
+
+      .bottom-right {
+        bottom: 40px;
+        right: 40px;
+        border-left: 0;
+        border-top: 0;
+      }
+
+      @keyframes hud-flicker {
+        0%,
+        100% {
+          opacity: 0.4;
+        }
+
+        50% {
+          opacity: 1;
+        }
+
+        52% {
+          opacity: 0.2;
+        }
+
+        54% {
+          opacity: 1;
+        }
+      }
+
+      /* Particules "Digital Dust" */
+      .particle {
+        position: absolute;
+        width: 4px;
+        height: 4px;
+        background: #f9d58b;
+        border-radius: 50%;
+        opacity: 0.3;
+        filter: blur(1px);
+        animation: float-up 10s linear infinite;
+      }
+
+      @keyframes float-up {
+        0% {
+          transform: translateY(110vh) scale(1);
+          opacity: 0;
+        }
+
+        50% {
+          opacity: 0.4;
+        }
+
+        100% {
+          transform: translateY(-10vh) scale(0.5);
+          opacity: 0;
+        }
+      }
+
+      /* Texte de données HUD */
+      .hud-data {
+        position: absolute;
+        left: 60px;
+        bottom: 250px;
+        font-family: "Courier New", Courier, monospace;
+        font-size: 10px;
+        color: rgba(249, 213, 139, 0.5);
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        line-height: 1.5;
+      }
+
+      /* Effet Glitch Chromatique sur le modèle */
+      .glitch-active {
+        filter: url(#chromatic-aberration) brightness(2) !important;
+      }
+
+      /* --- MODAL SAGESSE DOGON --- */
+      #wisdom-modal.active,
+      #rain-modal.active {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translate(var(--vv-x, 0px), var(--vv-y, 0px)) scale(1);
+      }
+
+      .wisdom-modal-style {
+        /* Centrage fiable + compensation Visual Viewport mobile */
+        position: fixed;
+        inset: 0;
+        margin: auto;
+        width: calc(100% - 40px);
+        max-width: 420px;
+        height: fit-content;
+        max-height: 85dvh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        transform: translate(var(--vv-x, 0px), var(--vv-y, 0px)) scale(0.9);
+        background: linear-gradient(
+          135deg,
+          rgba(85, 65, 93, 0.95),
+          rgba(50, 40, 55, 0.98)
+        );
+        border: 1px solid rgba(249, 213, 139, 0.5);
+        border-radius: 30px;
+        padding: 28px 20px;
+        color: #f9d58b;
+        text-align: center;
+        z-index: 5000;
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 0 0 40px rgba(249, 213, 139, 0.3);
+      }
+
+      #modal-backdrop {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 4500;
+        display: none;
+        opacity: 0;
+        transition: opacity 0.5s;
+      }
+
+      body.modal-open #modal-backdrop {
+        display: block;
+        opacity: 1;
+      }
+
+      body.modal-open #rain-button,
+      body.modal-open #hologram-toggle,
+      body.modal-open .hotspot {
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s;
+      }
+
+      #wisdom-modal h2 {
+        margin-top: 0;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        font-size: 1.4rem;
+        border-bottom: 1px solid rgba(249, 213, 139, 0.3);
+        padding-bottom: 10px;
+      }
+
+      #wisdom-modal p {
+        font-style: italic;
+        line-height: 1.6;
+        margin: 20px 0;
+      }
+
+      .close-wisdom {
+        background: transparent;
+        border: 1px solid #f9d58b;
+        color: #f9d58b;
+        padding: 8px 20px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-weight: bold;
+        margin-top: 10px;
+      }
+
+      /* Effet d'Aura Energétique */
+      .energy-pulse-aura {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 100px;
+        height: 100px;
+        background: radial-gradient(
+          circle,
+          rgba(249, 213, 139, 0.6) 0%,
+          transparent 70%
+        );
+        border-radius: 50%;
+        pointer-events: none;
+        opacity: 0;
+        z-index: 0;
+      }
+
+      .pulse-animation {
+        animation: energy-expand 1.5s ease-out forwards;
+      }
+
+      @keyframes energy-expand {
+        0% {
+          width: 50px;
+          height: 50px;
+          opacity: 1;
+          border: 1px solid #f9d58b;
+        }
+
+        100% {
+          width: 1000px;
+          height: 1000px;
+          opacity: 0;
+          border: 5px solid transparent;
+        }
+      }
+
+      /* --- PLATEFORME HOLOGRAPHIQUE & GRILLE --- */
+      #hologram-stage {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        display: none;
+        /* Caché par défaut */
+        z-index: 1;
+      }
+
+      #hologram-stage.active {
+        display: block;
+      }
+
+      /* Grille au sol */
+      .grid-floor {
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        height: 40vh;
+        background-image: linear-gradient(
+            rgba(249, 213, 139, 0.1) 1px,
+            transparent 1px
+          ),
+          linear-gradient(90deg, rgba(249, 213, 139, 0.1) 1px, transparent 1px);
+        background-size: 50px 50px;
+        transform: perspective(500px) rotateX(60deg);
+        transform-origin: bottom;
+        mask-image: radial-gradient(
+          ellipse at bottom,
+          black 20%,
+          transparent 80%
+        );
+        -webkit-mask-image: radial-gradient(
+          ellipse at bottom,
+          black 20%,
+          transparent 80%
+        );
+      }
+
+      /* Anneaux de la base */
+      .hologram-rings {
+        position: absolute;
+        bottom: 15%;
+        left: 50%;
+        transform: translateX(-50%) rotateX(75deg);
+        width: 400px;
+        height: 400px;
+      }
+
+      .ring {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        border: 2px solid #f9d58b;
+        border-radius: 50%;
+        opacity: 0;
+        animation: ring-pulse 3s infinite;
+      }
+
+      .ring:nth-child(2) {
+        animation-delay: 1s;
+      }
+
+      .ring:nth-child(3) {
+        animation-delay: 2s;
+      }
+
+      @keyframes ring-pulse {
+        0% {
+          width: 50px;
+          height: 50px;
+          opacity: 0.8;
+        }
+
+        100% {
+          width: 400px;
+          height: 400px;
+          opacity: 0;
+        }
+      }
+
+      /* Bouton d'Info Pluie (Invisible hors orage) */
+      .rain-hotspot {
+        display: none;
+        background-color: #788296;
+        /* Couleur nuage */
+      }
+
+      body.storm-active .rain-hotspot {
+        display: block;
+      }
+
+      /* L'énergie disparait en mode pluie */
+      body.storm-active .energy-hotspot {
+        display: none;
+      }
+
+      /* Faisceau lumineux vertical */
+      .light-beam {
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 300px;
+        height: 100vh;
+        background: radial-gradient(
+          ellipse at bottom,
+          rgba(249, 213, 139, 0.2) 0%,
+          transparent 70%
+        );
+        pointer-events: none;
+      }
+
+      /* --- PLUIE DIGITALE --- */
+      #rain-button {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        padding: 12px 24px;
+        background: rgba(85, 65, 93, 0.5);
+        border: 1px solid #f9d58b;
+        border-radius: 10px;
+        color: #f9d58b;
+        font-weight: bold;
+        cursor: pointer;
+        z-index: 3000;
+        backdrop-filter: blur(5px);
+      }
+
+      #rain-button.active {
+        background: #f9d58b;
+        color: #55415d;
+      }
+
+      #rain-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 20;
+        overflow: hidden;
+      }
+
+      .raindrop {
+        position: absolute;
+        width: 2px;
+        /* Plus large */
+        height: 30px;
+        /* Plus long */
+        background: linear-gradient(transparent, rgba(174, 194, 224, 1));
+        /* Opacité max */
+        filter: blur(0.5px);
+        transform: rotate(15deg);
+        /* Vent */
+        animation: rain-fall var(--speed) linear infinite;
+      }
+
+      @keyframes rain-fall {
+        from {
+          transform: translateY(-100px) rotate(15deg);
+        }
+
+        to {
+          transform: translateY(110vh) rotate(15deg);
+        }
+      }
+
+      /* --- NUAGES & ORAGE --- */
+      #cloud-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 5;
+        /* Augmenté */
+        opacity: 0;
+        transition: opacity 3s;
+      }
+
+      body.storm-active #cloud-container {
+        opacity: 0.7;
+      }
+
+      .cloud {
+        position: absolute;
+        background: radial-gradient(
+          ellipse at center,
+          rgba(60, 65, 80, 0.8) 0%,
+          transparent 85%
+        );
+        /* Très sombre et opaque */
+        filter: blur(60px);
+        border-radius: 50%;
+        animation: cloud-drift var(--d) linear infinite;
+      }
+
+      @keyframes cloud-drift {
+        from {
+          transform: translateX(-600px);
+        }
+
+        to {
+          transform: translateX(110vw);
+        }
+      }
+
+      /* Éclairs (Lightning) */
+      .lightning-flash {
+        animation: lightning-strike 8s infinite;
+      }
+
+      @keyframes lightning-strike {
+        0%,
+        95%,
+        98%,
+        100% {
+          filter: brightness(1);
+        }
+
+        96%,
+        99% {
+          filter: brightness(3) contrast(1.2);
+        }
+      }
+
+      body.storm-active {
+        background-color: #2b2b3b !important;
+        transition: background-color 3s;
+      }
+
+      /* --- Hotspots & Scan --- */
+      .hotspot {
+        width: 20px;
+        height: 20px;
+        border-radius: 10px;
+        border: none;
+        background-color: #f9d58b;
+        position: relative;
+      }
+
+      .hotspot::after {
+        content: "";
+        display: block;
+        width: 20px;
+        height: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px 2px #f9d58b;
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+          opacity: 1;
+        }
+
+        100% {
+          transform: scale(3);
+          opacity: 0;
+        }
+      }
+
+      .annotation {
+        background: rgba(85, 65, 93, 0.9);
+        color: #f9d58b;
+        padding: 5px 10px;
+        border-radius: 5px;
+        border: 1px solid #f9d58b;
+        font-size: 12px;
+        position: absolute;
+        top: 50%;
+        left: 30px;
+        transform: translateY(-50%);
+        white-space: nowrap;
+      }
+
+      model-viewer::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background: linear-gradient(
+          to right,
+          transparent,
+          #f9d58b,
+          transparent
+        );
+        box-shadow: 0 0 15px #f9d58b;
+        animation: scan 4s linear infinite;
+        opacity: 0.2;
+        pointer-events: none;
+      }
+
+      @keyframes scan {
+        0% {
+          top: 0%;
+        }
+
+        100% {
+          top: 100%;
+        }
+      }
+
+      /* --- PILLAR ICONS (tiny, stuck on pillars, discoverable) --- */
+      .pillar-hotspot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 1.5px solid rgba(249, 213, 139, 0.5);
+        background: rgba(85, 65, 93, 0.7);
+        cursor: pointer;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 0 0 4px rgba(249, 213, 139, 0.2);
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+        padding: 0;
+        outline: none;
+      }
+
+      /* Subtle breathing glow — very discreet */
+      .pillar-hotspot::before {
+        content: "";
+        position: absolute;
+        inset: -2px;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle,
+          rgba(249, 213, 139, 0.15) 0%,
+          transparent 70%
+        );
+        animation: micro-breathe 4s ease-in-out infinite;
+        pointer-events: none;
+      }
+
+      @keyframes micro-breathe {
+        0%,
+        100% {
+          opacity: 0.3;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.7;
+          transform: scale(1.4);
+        }
+      }
+
+      /* No pulsing ring — clean */
+      .pillar-hotspot::after {
+        display: none;
+      }
+
+      /* Expand beautifully on hover/focus */
+      .pillar-hotspot:hover,
+      .pillar-hotspot:focus {
+        width: 28px;
+        height: 28px;
+        border-color: rgba(249, 213, 139, 0.9);
+        background: rgba(50, 40, 55, 0.95);
+        box-shadow: 0 0 14px rgba(249, 213, 139, 0.5),
+          0 0 30px rgba(249, 213, 139, 0.15);
+      }
+
+      /* Icon inside — hidden by default, appears on hover */
+      .pillar-hotspot .pillar-icon {
+        width: 0;
+        height: 0;
+        fill: #f9d58b;
+        pointer-events: none;
+        position: relative;
+        z-index: 2;
+        opacity: 0;
+        transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        filter: drop-shadow(0 0 2px rgba(249, 213, 139, 0.4));
+      }
+
+      .pillar-hotspot:hover .pillar-icon,
+      .pillar-hotspot:focus .pillar-icon,
+      .pillar-hotspot.show-label .pillar-icon {
+        width: 14px;
+        height: 14px;
+        opacity: 1;
+      }
+
+      /* Tooltip label — appears on hover/tap */
+      .pillar-hotspot .pillar-label {
+        position: absolute;
+        bottom: calc(100% + 8px);
+        left: 50%;
+        transform: translateX(-50%) translateY(6px) scale(0.85);
+        background: rgba(30, 22, 35, 0.95);
+        color: #f9d58b;
+        padding: 5px 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(249, 213, 139, 0.35);
+        font-size: 10px;
+        font-weight: 600;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        letter-spacing: 0.5px;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+      }
+
+      .pillar-hotspot .pillar-label::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 4px solid transparent;
+        border-top-color: rgba(249, 213, 139, 0.35);
+      }
+
+      .pillar-hotspot:hover .pillar-label,
+      .pillar-hotspot.show-label .pillar-label {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scale(1);
+      }
+
+      /* Color coding per category — only affects the tiny dot border */
+      .pillar-hotspot[data-category="histoire"] {
+        border-color: rgba(232, 168, 124, 0.6);
+        background: rgba(232, 168, 124, 0.15);
+      }
+      .pillar-hotspot[data-category="histoire"]:hover {
+        border-color: #e8a87c;
+      }
+      .pillar-hotspot[data-category="histoire"] .pillar-icon {
+        fill: #e8a87c;
+      }
+
+      .pillar-hotspot[data-category="architecture"] {
+        border-color: rgba(133, 205, 202, 0.6);
+        background: rgba(133, 205, 202, 0.15);
+      }
+      .pillar-hotspot[data-category="architecture"]:hover {
+        border-color: #85cdca;
+      }
+      .pillar-hotspot[data-category="architecture"] .pillar-icon {
+        fill: #85cdca;
+      }
+
+      .pillar-hotspot[data-category="art"] {
+        border-color: rgba(217, 114, 255, 0.6);
+        background: rgba(217, 114, 255, 0.15);
+      }
+      .pillar-hotspot[data-category="art"]:hover {
+        border-color: #d972ff;
+      }
+      .pillar-hotspot[data-category="art"] .pillar-icon {
+        fill: #d972ff;
+      }
+
+      .pillar-hotspot[data-category="astronomie"] {
+        border-color: rgba(112, 184, 255, 0.6);
+        background: rgba(112, 184, 255, 0.15);
+      }
+      .pillar-hotspot[data-category="astronomie"]:hover {
+        border-color: #70b8ff;
+      }
+      .pillar-hotspot[data-category="astronomie"] .pillar-icon {
+        fill: #70b8ff;
+      }
+
+      .pillar-hotspot[data-category="agriculture"] {
+        border-color: rgba(123, 198, 126, 0.6);
+        background: rgba(123, 198, 126, 0.15);
+      }
+      .pillar-hotspot[data-category="agriculture"]:hover {
+        border-color: #7bc67e;
+      }
+      .pillar-hotspot[data-category="agriculture"] .pillar-icon {
+        fill: #7bc67e;
+      }
+
+      .pillar-hotspot[data-category="musique"] {
+        border-color: rgba(255, 179, 71, 0.6);
+        background: rgba(255, 179, 71, 0.15);
+      }
+      .pillar-hotspot[data-category="musique"]:hover {
+        border-color: #ffb347;
+      }
+      .pillar-hotspot[data-category="musique"] .pillar-icon {
+        fill: #ffb347;
+      }
+
+      .pillar-hotspot[data-category="masques"] {
+        border-color: rgba(255, 107, 107, 0.6);
+        background: rgba(255, 107, 107, 0.15);
+      }
+      .pillar-hotspot[data-category="masques"]:hover {
+        border-color: #ff6b6b;
+      }
+      .pillar-hotspot[data-category="masques"] .pillar-icon {
+        fill: #ff6b6b;
+      }
+
+      .pillar-hotspot[data-category="mythologie"] {
+        border-color: rgba(201, 177, 255, 0.6);
+        background: rgba(201, 177, 255, 0.15);
+      }
+      .pillar-hotspot[data-category="mythologie"]:hover {
+        border-color: #c9b1ff;
+      }
+      .pillar-hotspot[data-category="mythologie"] .pillar-icon {
+        fill: #c9b1ff;
+      }
+
+      /* --- HIDE pillar icons in hologram mode --- */
+      .hologram-effect .pillar-hotspot {
+        opacity: 0 !important;
+        pointer-events: none !important;
+        transition: opacity 0.5s ease;
+      }
+
+      /* --- BOTTOM CORNER BUTTONS --- */
+
+      #info-link-btn,
+      #dogokun-btn {
+        position: fixed;
+        bottom: 20px;
+        padding: 13px 25px;
+        background: rgba(50, 40, 55, 0.85);
+        border: 1.5px solid rgba(249, 213, 139, 0.55);
+        border-radius: 30px;
+        color: #f9d58b;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        cursor: pointer;
+        z-index: 3000;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        box-shadow: 0 0 18px rgba(249, 213, 139, 0.2);
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        white-space: nowrap;
+      }
+
+      #info-link-btn {
+        left: 20px;
+      }
+      #dogokun-btn {
+        right: 20px;
+      }
+
+      #info-link-btn:hover,
+      #dogokun-btn:hover {
+        background: rgba(249, 213, 139, 0.12);
+        border-color: #f9d58b;
+        box-shadow: 0 0 28px rgba(249, 213, 139, 0.4),
+          0 4px 20px rgba(0, 0, 0, 0.3);
+        transform: translateY(-2px);
+        letter-spacing: 3px;
+      }
+
+      #info-link-btn:active,
+      #dogokun-btn:active {
+        transform: translateY(0);
+      }
+
+      /* --- MODAL LINKEDIN --- */
+      body.hologram-active #info-link-btn,
+      body.hologram-active #dogokun-btn {
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.5s;
+      }
+
+      /* Modal LinkedIn Confirmation */
+      #linkedin-modal {
+        position: fixed;
+        inset: 0;
+        margin: auto;
+        transform: translate(var(--vv-x, 0px), var(--vv-y, 0px)) scale(0.9);
+        width: calc(100% - 40px);
+        max-width: 400px;
+        height: fit-content;
+        background: linear-gradient(
+          135deg,
+          rgba(85, 65, 93, 0.98),
+          rgba(50, 40, 55, 1)
+        );
+        border: 2px solid rgba(249, 213, 139, 0.6);
+        border-radius: 40px;
+        padding: 30px;
+        color: #f9d58b;
+        text-align: center;
+        z-index: 6000;
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 0 0 50px rgba(0, 0, 0, 0.6),
+          0 0 30px rgba(249, 213, 139, 0.2);
+        backdrop-filter: blur(15px);
+      }
+
+      #linkedin-modal.active {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translate(var(--vv-x, 0px), var(--vv-y, 0px)) scale(1);
+      }
+
+      #linkedin-modal h3 {
+        margin-top: 0;
+        font-size: 1.2rem;
+        letter-spacing: 1px;
+        border-bottom: 1px solid rgba(249, 213, 139, 0.3);
+        padding-bottom: 15px;
+      }
+
+      #linkedin-modal p {
+        font-size: 0.95rem;
+        line-height: 1.5;
+        margin: 20px 0;
+        opacity: 0.9;
+      }
+
+      .modal-buttons {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+      }
+
+      .modal-btn {
+        padding: 12px 25px;
+        border-radius: 25px;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        transition: all 0.3s;
+      }
+
+      #confirm-linkedin {
+        background: #f9d58b;
+        color: #55415d;
+        border: none;
+      }
+
+      #cancel-linkedin {
+        background: transparent;
+        color: #f9d58b;
+        border: 1.5px solid #f9d58b;
+      }
+
+      .modal-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+      }
+
+      #confirm-linkedin:hover {
+        background: #fff;
+      }
+
+      #cancel-linkedin:hover {
+        background: rgba(249, 213, 139, 0.1);
+      }
+
+      body.modal-open .pillar-hotspot {
+        opacity: 0;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="modal-backdrop"></div>
+
+    <!-- Conteneur de Nuages -->
+    <div id="cloud-container">
+      <div
+        class="cloud"
+        style="width: 600px; height: 300px; top: -50px; --d: 60s"
+      ></div>
+      <div
+        class="cloud"
+        style="width: 800px; height: 400px; top: 100px; --d: 90s; opacity: 0.5"
+      ></div>
+      <div
+        class="cloud"
+        style="width: 500px; height: 250px; top: -100px; --d: 45s; opacity: 0.3"
+      ></div>
+    </div>
+
+    <button id="hologram-toggle" onclick="toggleHologram()">
+      ACTIVER HOLOGRAMME
+    </button>
+    <button id="rain-button" onclick="toggleRain()">RAIN</button>
+
+    <!-- Conteneur de Pluie (Indépendant) -->
+    <div id="rain-container"></div>
+
+    <div id="welcome-popup">
+      <div id="welcome-content">
+        <h1>INITIALISATION...</h1>
+        <p>
+          "Explorez l'architecture sacrée du Pays Dogon dans sa forme
+          spectrale."
+        </p>
+        <button id="start-button" onclick="closePopup()">COMMENCER</button>
+      </div>
+    </div>
+
+    <!-- Modal Sagesse Dogon (Caché au début) -->
+    <div id="wisdom-modal" class="wisdom-modal-style" style="display: none">
+      <h2>Sagesse Ancestrale</h2>
+      <p>
+        "Le Toguna est la 'Maison de la Parole'. Sous ce toit bas, nul ne peut
+        se dresser contre son frère sans se heurter au plafond. Ici, seule la
+        raison et le dialogue triomphent."
+      </p>
+      <div style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 20px">
+        VALEURS DOGON : <br />
+        PAIX • DIALOGUE • JUSTICE
+      </div>
+      <button class="close-wisdom" onclick="closeWisdom()">
+        RETOUR AU SCAN
+      </button>
+    </div>
+
+    <div id="energy-aura" class="energy-pulse-aura"></div>
+
+    <!-- Modal Info Pluie -->
+    <div id="rain-modal" class="wisdom-modal-style" style="display: none">
+      <h2>L'Ingéniosité du Toit</h2>
+      <p>
+        "Le toit du Toguna est composé de 8 couches de chaume (paille),
+        symbolisant les 8 ancêtres Dogon. Cette épaisseur incroyable n'est pas
+        qu'esthétique : elle isole du soleil et absorbe l'eau, gardant
+        l'intérieur sec pour protéger les conseils des anciens."
+      </p>
+      <button class="close-wisdom" onclick="closeRainInfo()">
+        RETOUR AU SCAN
+      </button>
+    </div>
+
+    <model-viewer
+      id="toguna-view"
+      src="https://cdn.jsdelivr.net/gh/fansestar355-star/Toguna-Assets@main/LE_TOGUNA_COMPLTE.glb"
+      ar
+      scale="0.2 0.2 0.2"
+      ar-modes="webxr scene-viewer quick-look"
+      camera-controls
+      shadow-intensity="1.5"
+      auto-rotate
+      exposure="1.1"
+      touch-action="none"
+    >
+      <!-- HUD Overlay (Visible en AR WebXR uniquement en mode Hologramme) -->
+      <div id="hud-overlay">
+        <div class="hud-corner top-left"></div>
+        <div class="hud-corner top-right"></div>
+        <div class="hud-corner bottom-left"></div>
+        <div class="hud-corner bottom-right"></div>
+        <div class="hud-data">
+          SCANNING SECTOR 7G...<br />
+          TOGUNA ARTIFACT DETECTED<br />
+          DECRYPTING SACRED GEOMETRY<br />
+          GPS: 14.4751° N, 3.3214° W
+        </div>
+        <div class="particle" style="left: 5%; animation-delay: 0s"></div>
+        <div class="particle" style="left: 15%; animation-delay: 1.5s"></div>
+        <div class="particle" style="left: 25%; animation-delay: 3s"></div>
+        <div class="particle" style="left: 35%; animation-delay: 0.5s"></div>
+        <div class="particle" style="left: 45%; animation-delay: 2s"></div>
+        <div class="particle" style="left: 55%; animation-delay: 4.5s"></div>
+        <div class="particle" style="left: 65%; animation-delay: 1s"></div>
+        <div class="particle" style="left: 75%; animation-delay: 2.5s"></div>
+        <div class="particle" style="left: 85%; animation-delay: 3.5s"></div>
+        <div class="particle" style="left: 95%; animation-delay: 0.2s"></div>
+      </div>
+
+      <!-- Scène holographique (Grille, Anneaux, Faisceau) -->
+      <div id="hologram-stage">
+        <div class="grid-floor"></div>
+        <div class="light-beam"></div>
+        <div class="hologram-rings">
+          <div class="ring"></div>
+          <div class="ring"></div>
+          <div class="ring"></div>
+        </div>
+      </div>
+
+      <button
+        class="hotspot energy-hotspot"
+        slot="hotspot-1"
+        data-position="-0.7m 0.3m 0.5m"
+        data-normal="-1m 0m 0m"
+        onclick="showWisdom()"
+      >
+        <div class="annotation">Source d'Energie</div>
+      </button>
+
+      <button
+        class="hotspot rain-hotspot"
+        slot="hotspot-2"
+        data-position="1.2m 0.6m 0m"
+        data-normal="1m 0m 0m"
+        onclick="showRainInfo()"
+      >
+        <div class="annotation">Pluie & Protection</div>
+      </button>
+
+      <button slot="ar-button" id="ar-button">MATÉRIALISER EN AR</button>
+    </model-viewer>
+
+    <!-- Bottom-left: PILLARS -->
+    <button
+      id="info-link-btn"
+      onclick="window.open('https://fansestar355-star.github.io/Toguna-World/', '_blank', 'noopener,noreferrer')"
+      title="Découvrir l'univers du Toguna"
+    >
+      PILLARS
+    </button>
+
+    <!-- Bottom-right: DOGOKUN SÖRÖ -->
+    <button id="dogokun-btn" onclick="confirmLinkedIn()">DOGOKUN SÖRÖ</button>
+
+    <!-- Modal LinkedIn Confirmation -->
+    <div id="linkedin-modal" style="display: none">
+      <h3>Redirection</h3>
+      <p>Ce lien va ouvrir une page LinkedIn. Voulez-vous continuer ?</p>
+      <div class="modal-buttons">
+        <button
+          id="cancel-linkedin"
+          class="modal-btn"
+          onclick="closeLinkedInModal()"
+        >
+          ANNULER
+        </button>
+        <button
+          id="confirm-linkedin"
+          class="modal-btn"
+          onclick="proceedToLinkedIn()"
+        >
+          CONTINUER
+        </button>
+      </div>
+    </div>
+
+    <script>
+      function closePopup() {
+        sessionStorage.setItem("toguna_visited", "true");
+        const popup = document.getElementById("welcome-popup");
+        popup.style.opacity = "0";
+        setTimeout(() => {
+          popup.style.display = "none";
+        }, 500);
+      }
+
+      function toggleHologram() {
+        const viewer = document.getElementById("toguna-view");
+        const btn = document.getElementById("hologram-toggle");
+        const stage = document.getElementById("hologram-stage");
+        const hud = document.getElementById("hud-overlay");
+
+        const isHologram = viewer.classList.toggle("hologram-effect");
+        viewer.classList.toggle("glitch-active");
+        btn.classList.toggle("active");
+        stage.classList.toggle("active");
+        hud.classList.toggle("active");
+        document.body.classList.toggle("hologram-active");
+
+        // --- API MATERIALS POUR AR ---
+        if (viewer.model && viewer.model.materials) {
+          viewer.model.materials.forEach((material) => {
+            if (isHologram) {
+              // Mode Hologramme : Transparent et Lumineux
+              material.setAlphaMode("BLEND");
+              material.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 0.5]);
+              material.setEmissiveFactor([0.97, 0.83, 0.54]); // Doré
+            } else {
+              // Mode Normal : Opaque
+              material.setAlphaMode("OPAQUE");
+              material.setEmissiveFactor([0, 0, 0]);
+
+              // SI IL PLEUT, on revient au gris orage, SINON au blanc normal
+              const rainActiveNow = document
+                .getElementById("rain-button")
+                .classList.contains("active");
+              if (rainActiveNow) {
+                const stormColor = isRoof
+                  ? [0.4, 0.4, 0.5, 1]
+                  : [0.7, 0.7, 0.8, 1];
+                material.pbrMetallicRoughness.setBaseColorFactor(stormColor);
+              } else {
+                material.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 1]);
+              }
+            }
+          });
+        }
+
+        if (isHologram) {
+          btn.innerText = "DÉSACTIVER HOLOGRAMME";
+        } else {
+          btn.innerText = "ACTIVER HOLOGRAMME";
+        }
+      }
+
+      // --- FONCTIONS CULTURELLES ---
+      function showWisdom() {
+        const viewer = document.getElementById("toguna-view");
+        const modal = document.getElementById("wisdom-modal");
+        const aura = document.getElementById("energy-aura");
+
+        document.body.classList.add("modal-open");
+        modal.style.display = "block";
+        setTimeout(() => modal.classList.add("active"), 10);
+
+        aura.classList.remove("pulse-animation");
+        void aura.offsetWidth;
+        aura.classList.add("pulse-animation");
+      }
+
+      function closeWisdom() {
+        const modal = document.getElementById("wisdom-modal");
+        modal.classList.remove("active");
+        document.body.classList.remove("modal-open");
+        setTimeout(() => (modal.style.display = "none"), 400);
+      }
+
+      function showRainInfo() {
+        const modal = document.getElementById("rain-modal");
+        document.body.classList.add("modal-open");
+        modal.style.display = "block";
+        setTimeout(() => modal.classList.add("active"), 10);
+      }
+
+      function closeRainInfo() {
+        const modal = document.getElementById("rain-modal");
+        modal.classList.remove("active");
+        document.body.classList.remove("modal-open");
+        setTimeout(() => (modal.style.display = "none"), 400);
+      }
+
+      // --- SIMULATION DE PLUIE ---
+      let rainActive = false;
+      let rainInterval;
+      let transitionRequest;
+
+      function toggleRain() {
+        const viewer = document.getElementById("toguna-view");
+        const container = document.getElementById("rain-container");
+        const btn = document.getElementById("rain-button");
+        rainActive = !rainActive;
+        btn.classList.toggle("active");
+
+        // Stop previous transition
+        if (transitionRequest) cancelAnimationFrame(transitionRequest);
+
+        const duration = 2000;
+        const start = performance.now();
+
+        // CAPTURE STARTING STATE
+        const isHologram = viewer.classList.contains("hologram-effect");
+        const initialExposure = viewer.exposure || 1.1;
+
+        // Si hologram + rain, on ne descend pas trop l'exposure pour garder l'effet de lueur
+        let targetExposure = rainActive ? 0.4 : 1.1;
+        if (rainActive && isHologram) targetExposure = 0.6;
+
+        const startMaterials = [];
+        if (viewer.model && viewer.model.materials) {
+          viewer.model.materials.forEach((material) => {
+            const name = (material.name || "").toLowerCase();
+            const projectToRoof =
+              name.includes("toit") ||
+              name.includes("roof") ||
+              name.includes("thatch") ||
+              name.includes("paille") ||
+              name.includes("top");
+
+            startMaterials.push({
+              material: material,
+              isRoof: projectToRoof,
+              startColor: [...material.pbrMetallicRoughness.baseColorFactor],
+              startRough: material.pbrMetallicRoughness.roughnessFactor,
+            });
+          });
+        }
+
+        function animateTransition(now) {
+          const elapsed = now - start;
+          const progress = Math.min(elapsed / duration, 1);
+          const ease = progress * (2 - progress); // Ease out
+
+          // Update Exposure
+          viewer.exposure =
+            initialExposure + (targetExposure - initialExposure) * ease;
+
+          // Update Materials
+          startMaterials.forEach((m) => {
+            const isHologramNow = viewer.classList.contains("hologram-effect");
+
+            // Si hologram, on tire vers le blanc pour la lueur, sinon vers l'orage
+            const stormColor = m.isRoof
+              ? [0.4, 0.4, 0.5, 1]
+              : [0.7, 0.7, 0.8, 1];
+            const holoStormColor = [0.8, 0.8, 1, 1]; // Plus clair si hologramme
+
+            const targetColor = rainActive
+              ? isHologramNow
+                ? holoStormColor
+                : stormColor
+              : [1, 1, 1, 1];
+            const targetRough = rainActive
+              ? m.isRoof
+                ? 0.2
+                : 1.0
+              : 1.0; /* Augmenté à 0.2 */
+
+            const newColor = m.startColor.map(
+              (c, i) => c + (targetColor[i] - c) * ease
+            );
+            m.material.pbrMetallicRoughness.setBaseColorFactor(newColor);
+
+            const newRough = m.startRough + (targetRough - m.startRough) * ease;
+            m.material.pbrMetallicRoughness.setRoughnessFactor(newRough);
+          });
+
+          if (progress < 1) {
+            transitionRequest = requestAnimationFrame(animateTransition);
+          }
+        }
+        transitionRequest = requestAnimationFrame(animateTransition);
+
+        if (rainActive) {
+          btn.innerText = "STOP RAIN";
+          document.body.classList.add("storm-active");
+          viewer.classList.add("lightning-flash");
+
+          rainInterval = setInterval(() => {
+            const drop = document.createElement("div");
+            drop.className = "raindrop";
+            const variant = Math.random();
+            drop.style.left = Math.random() * 100 + "%";
+            drop.style.opacity = variant * 0.6 + 0.2;
+            drop.style.width = variant * 1 + 0.5 + "px";
+            const speed = 0.4 - variant * 0.2 + "s";
+            drop.style.setProperty("--speed", speed);
+            container.appendChild(drop);
+            setTimeout(() => {
+              drop.remove();
+            }, 1000);
+          }, 30);
+        } else {
+          btn.innerText = "RAIN";
+          document.body.classList.remove("storm-active");
+          viewer.classList.remove("lightning-flash");
+          clearInterval(rainInterval);
+          container.innerHTML = "";
+        }
+      }
+
+      // --- PILLAR ICONS LOGIC ---
+      function openPillarLink(btn) {
+        const link = btn.getAttribute("data-link");
+        if (link) {
+          // Show label briefly before navigating
+          btn.classList.add("show-label");
+          setTimeout(() => {
+            window.open(link, "_blank", "noopener,noreferrer");
+            btn.classList.remove("show-label");
+          }, 400);
+        }
+      }
+
+      function toggleLegend() {
+        const panel = document.getElementById("legend-panel");
+        const btn = document.getElementById("legend-toggle");
+        panel.classList.toggle("active");
+        btn.classList.toggle("active");
+      }
+
+      function highlightPillar(category) {
+        // Remove all highlights
+        document.querySelectorAll(".pillar-hotspot").forEach((h) => {
+          h.classList.remove("show-label");
+          h.style.transform = "";
+        });
+        // Highlight the matching pillar
+        const target = document.querySelector(
+          `.pillar-hotspot[data-category="${category}"]`
+        );
+        if (target) {
+          target.classList.add("show-label");
+          target.style.transform = "scale(1.5)";
+          // Remove highlight after 3s
+          setTimeout(() => {
+            target.classList.remove("show-label");
+            target.style.transform = "";
+          }, 3000);
+        }
+        // Close legend after selecting
+        toggleLegend();
+      }
+
+      // Show labels on touch for mobile (toggle on tap)
+      document.querySelectorAll(".pillar-hotspot").forEach((btn) => {
+        btn.addEventListener("touchstart", function (e) {
+          // On first tap show label, on second tap open link
+          if (this.classList.contains("show-label")) {
+            // Already shown, open the link
+            openPillarLink(this);
+          } else {
+            // Hide all other labels first
+            document
+              .querySelectorAll(".pillar-hotspot")
+              .forEach((b) => b.classList.remove("show-label"));
+            this.classList.add("show-label");
+            e.preventDefault();
+          }
+        });
+      });
+
+      // --- LINKEDIN CONFIRMATION ---
+      function confirmLinkedIn() {
+        const modal = document.getElementById("linkedin-modal");
+        const backdrop = document.getElementById("modal-backdrop");
+
+        document.body.classList.add("modal-open");
+        backdrop.style.display = "block";
+        modal.style.display = "block";
+
+        setTimeout(() => {
+          backdrop.style.opacity = "1";
+          modal.classList.add("active");
+        }, 10);
+      }
+
+      function closeLinkedInModal() {
+        const modal = document.getElementById("linkedin-modal");
+        const backdrop = document.getElementById("modal-backdrop");
+
+        modal.classList.remove("active");
+        backdrop.style.opacity = "0";
+
+        setTimeout(() => {
+          modal.style.display = "none";
+          if (!document.querySelector(".wisdom-modal-style.active")) {
+            backdrop.style.display = "none";
+            document.body.classList.remove("modal-open");
+          }
+        }, 400);
+      }
+
+      function proceedToLinkedIn() {
+        const linkedInUrl =
+          "https://www.linkedin.com/posts/kabakoo_d%C3%B4g%C3%B4kun-s%C3%B4r%C3%B4-21-le-toguna-dogon-du-mali-activity-7303818203825098752-ywi-?utm_source=share&utm_medium=member_android&rcm=ACoAAEb0hTIBIH9eW3u7q0lz1nKmC5J5lbCBVt0";
+        window.open(linkedInUrl, "_blank", "noopener,noreferrer");
+        closeLinkedInModal();
+      }
+
+      // --- VISUAL VIEWPORT API ---
+      // Compense le decalage du viewport visuel quand l'utilisateur
+      // interagit avec le modele 3D (drag, pinch-zoom) sur mobile.
+      (function () {
+        const vv = window.visualViewport;
+        if (!vv) return;
+
+        function syncViewport() {
+          const x = vv.offsetLeft;
+          const y = vv.offsetTop;
+          document.documentElement.style.setProperty("--vv-x", x + "px");
+          document.documentElement.style.setProperty("--vv-y", y + "px");
+        }
+
+        vv.addEventListener("scroll", syncViewport);
+        vv.addEventListener("resize", syncViewport);
+        syncViewport();
+      })();
+
+      // Hide labels when clicking elsewhere
+      document.addEventListener("click", function (e) {
+        if (
+          !e.target.closest(".pillar-hotspot") &&
+          !e.target.closest("#legend-panel")
+        ) {
+          document
+            .querySelectorAll(".pillar-hotspot")
+            .forEach((b) => b.classList.remove("show-label"));
+        }
+      });
+
+      // --- AUTOMATION AR ---
+      const modelViewer = document.getElementById("toguna-view");
+      modelViewer.addEventListener("ar-status", (event) => {
+        // Si l'utilisateur lance la RA et que le mode hologramme n'est pas actif, on pourrait l'activer
+        // Mais ici on laisse l'utilisateur choisir via le bouton.
+      });
+    </script>
+  </body>
+</html>

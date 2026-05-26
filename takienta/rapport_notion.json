@@ -1,0 +1,41 @@
+{
+  "parent": { "database_id": "65073e08-97ca-4c60-9cf2-da1078736240" },
+  "properties": {
+    "Name": {
+      "title": [{ "text": { "content": "Rapport Takienta — 17 Avril 2026" } }]
+    }
+  },
+  "children": [
+    { "object": "block", "type": "heading_1", "heading_1": { "rich_text": [{ "text": { "content": "Rapport de travail — La Takienta · 17 Avril 2026" } }] } },
+    { "object": "block", "type": "paragraph", "paragraph": { "rich_text": [{ "text": { "content": "Projet : Expérience WebAR interactive de la Takienta (architecture Batammariba, Koutammakou, Togo — Patrimoine UNESCO 2004)" } }] } },
+    { "object": "block", "type": "divider", "divider": {} },
+
+    { "object": "block", "type": "heading_2", "heading_2": { "rich_text": [{ "text": { "content": "✅ 1. Hébergement du modèle 3D sur GitHub" } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Upload de LA_TAKIENTA.glb (3.26 MB) sur le repo GitHub fansestar355-star/La-Takienta" } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Mise à jour de l'URL de fallback dans le HTML : Toguna-Assets → La-Takienta" } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Push du fichier index.html sur GitHub Pages — site live" } }] } },
+
+    { "object": "block", "type": "heading_2", "heading_2": { "rich_text": [{ "text": { "content": "✅ 2. Mise à jour des annotations du modèle 3D" } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Renommage : Grenier Principal → Grenier Homme | Grenier Secondaire → Grenier Femme" } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Ajout de 2 nouvelles annotations : WOOD (Bois de Construction) + DRIED_VEGETABLES (Légumes Séchés)" } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Descriptions + sous-titres + positions spatiales ajoutés pour les 2 nouvelles parties" } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Total : 8 annotations actives sur le modèle (Toit, Grenier Homme, Grenier Femme, Échelle, Autels, Murs, Bois, Légumes)" } }] } },
+
+    { "object": "block", "type": "heading_2", "heading_2": { "rich_text": [{ "text": { "content": "✅ 3. Redesign visuel des annotations" } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Remplacement des losanges (carrés tournés) par des cercles dorés avec halo lumineux pulsant" } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Suppression du bruit visuel : index numéroté, CTA flèche, diviseur animé supprimés" } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Nouveau style : texte flottant sans boîte, titre uppercase large tracking + séparateur or fin + catégorie monospace" } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Reorganisation SPATIAL_MAP : disposition en éventail autour du modèle (haut centre, 3 droite, 3 gauche, bas)" } }] } },
+
+    { "object": "block", "type": "heading_2", "heading_2": { "rich_text": [{ "text": { "content": "✅ 4. Amélioration de l'interaction caméra" } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Contrôle manuel OrbitControls actif pendant l'affichage du panneau descriptif" } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Animation orbitale automatique (arc 35°) coupée dès que l'utilisateur prend le contrôle" } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Distinction clic / drag via mousedown+mouseup pour éviter le déclenchement involontaire" } }] } },
+
+    { "object": "block", "type": "divider", "divider": {} },
+    { "object": "block", "type": "heading_2", "heading_2": { "rich_text": [{ "text": { "content": "🔗 Liens du projet" } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Site live : https://fansestar355-star.github.io/La-Takienta/", "link": { "url": "https://fansestar355-star.github.io/La-Takienta/" } } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Repo GitHub : https://github.com/fansestar355-star/La-Takienta", "link": { "url": "https://github.com/fansestar355-star/La-Takienta" } } }] } },
+    { "object": "block", "type": "bulleted_list_item", "bulleted_list_item": { "rich_text": [{ "text": { "content": "Modèle GLB hébergé : https://github.com/fansestar355-star/La-Takienta/blob/main/La_Takienta.glb", "link": { "url": "https://github.com/fansestar355-star/La-Takienta/blob/main/La_Takienta.glb" } } }] } }
+  ]
+}

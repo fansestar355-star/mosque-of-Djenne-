@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell($pdfPath = \"C:\\\\Users\\\\Kabakoo Apprenant.e\\\\Downloads\\\\notion_pdfs\\\\Grande Mosquée de Djenné — Recherche AR 3D 3577c76212ab80f0b127f30d2531ecde.pdf\"; $bytes = [System.IO.File]::ReadAllBytes\\($pdfPath\\); $enc = [System.Text.Encoding]::GetEncoding\\('iso-8859-1'\\); $text = $enc.GetString\\($bytes\\); $lines = $text -split \"`n\"; $readable = $lines | Where-Object { $_ -match '[a-zA-ZÀ-ÿ ]{5,}' } | ForEach-Object { $_.Trim\\(\\) } | Where-Object { $_.Length -gt 5 }; $readable | Select-Object -First 100)",
+      "PowerShell(node -e \"const fs=require\\('fs'\\); const buf=fs.readFileSync\\('C:/Users/Kabakoo Apprenant.e/Downloads/notion_pdfs/Grande Mosqu�e de Djenn� - Recherche AR 3D 3577c76212ab80f0b127f30d2531ecde.pdf'\\); const text=buf.toString\\('latin1'\\); const matches=text.match\\(/[^\\\\x00-\\\\x08\\\\x0b\\\\x0c\\\\x0e-\\\\x1f]{10,}/g\\); if\\(matches\\) matches.filter\\(m=>/[a-zA-Z�-� ]{5,}/.test\\(m\\)\\).slice\\(0,100\\).forEach\\(m=>console.log\\(m\\)\\);\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Kabakoo Apprenant.e\\\\Desktop\\\\MES PROJETS\\\\tombeau-des-askia\" -Recurse)",
+      "Bash(Select-Object FullName, Length)",
+      "Bash(Format-Table -AutoSize)"
+    ]
+  }
+}

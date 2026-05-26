@@ -1,0 +1,1902 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Tombeau des Askia — Vue 3D</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Caveat:wght@400;500&display=swap" rel="stylesheet">
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <style>
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+        :root { --bg:#07050f; --gold:#f9d58b; --text:#f0eaf8; --muted:#9490b8; }
+        body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; overflow:hidden; }
+
+        canvas#c { position:fixed; inset:0; display:block; opacity:0; transition:opacity 1.2s ease; }
+        canvas#c.visible { opacity:1; }
+
+        /* Vignette */
+        .vignette {
+            position:fixed; inset:0; pointer-events:none; z-index:10;
+            background:radial-gradient(ellipse at center,
+                transparent 30%, rgba(7,5,15,0.45) 60%, rgba(7,5,15,0.82) 100%);
+        }
+
+        /* HUD coins */
+        .hud-corner {
+            position:fixed; width:36px; height:36px;
+            border-color:rgba(249,213,139,0.45); border-style:solid;
+            z-index:50; opacity:0; transition:opacity 1s ease;
+        }
+        .hud-corner.on { opacity:1; }
+        .hud-tl { top:20px; left:20px; border-width:2px 0 0 2px; }
+        .hud-tr { top:20px; right:20px; border-width:2px 2px 0 0; }
+        .hud-bl { bottom:20px; left:20px; border-width:0 0 2px 2px; }
+        .hud-br { bottom:20px; right:20px; border-width:0 2px 2px 0; }
+
+        #hud-data {
+            position:fixed; top:28px; left:68px;
+            font-size:0.52rem; letter-spacing:0.28em; color:rgba(249,213,139,0.5);
+            text-transform:uppercase; line-height:2.2; font-family:'Courier New',monospace;
+            z-index:50; opacity:0; transition:opacity 1s ease 0.4s;
+        }
+        #hud-data.on { opacity:1; }
+
+        /* Info panel */
+        #info-panel {
+            position:fixed; bottom:0; left:0; right:0;
+            padding:52px 40px 32px; z-index:50;
+            background:linear-gradient(transparent, rgba(7,5,15,0.92) 40%);
+            opacity:0; transition:opacity 1s ease 0.6s;
+        }
+        #info-panel.on { opacity:1; }
+        .panel-tag  { font-size:0.55rem; letter-spacing:0.25em; color:var(--gold); text-transform:uppercase; margin-bottom:10px; }
+        .panel-title{
+            font-family:'Playfair Display',serif; font-size:clamp(1.4rem,3vw,2.2rem);
+            font-weight:900; margin-bottom:10px;
+            transition: font-size 0.4s ease, top 0.4s ease, position 0.4s ease;
+        }
+        .panel-desc { font-size:0.78rem; color:rgba(240,234,248,0.65); max-width:520px; line-height:1.75; transition:opacity 0.3s ease; }
+        .panel-hint { font-size:0.58rem; letter-spacing:0.18em; color:var(--gold); opacity:0.55; margin-top:14px; text-transform:uppercase; transition:opacity 0.3s ease; }
+
+        /* Panneau complètement caché quand une annotation est ouverte */
+        #info-panel.detail-mode { opacity: 0 !important; pointer-events: none; }
+
+        /* ── HUD Buttons (back / sketch / adhan) ── */
+        #back-btn, #sketch-btn, #adhan-btn {
+            position: fixed; z-index:60;
+            display: inline-flex; align-items: center; gap: 7px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.46rem; letter-spacing: 0.24em; text-transform: uppercase;
+            color: rgba(196,175,248,0.55);
+            text-decoration: none;
+            background: rgba(7,5,15,0.55);
+            backdrop-filter: blur(10px);
+            border: none; outline: none;
+            padding: 9px 16px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 1s ease, color 0.25s, box-shadow 0.25s, background 0.25s;
+            clip-path: polygon(6px 0%, calc(100% - 6px) 0%, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0% calc(100% - 6px), 0% 6px);
+        }
+        #back-btn::before, #sketch-btn::before, #adhan-btn::before {
+            content: '';
+            position: absolute; inset: 0;
+            clip-path: polygon(6px 0%, calc(100% - 6px) 0%, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0% calc(100% - 6px), 0% 6px);
+            background: rgba(196,175,248,0.12);
+            pointer-events: none;
+        }
+        /* Fine bordure via box-shadow interne */
+        #back-btn, #sketch-btn, #adhan-btn {
+            box-shadow: inset 0 0 0 1px rgba(196,175,248,0.18);
+        }
+        #back-btn { top:22px; right:24px; }
+        @keyframes hudOnLeft {
+            0%   { opacity:0;   transform:translateX(-18px) scaleX(0.88); filter:brightness(0);   }
+            18%  { opacity:0.9; transform:translateX(3px)   scaleX(1.02); filter:brightness(2.8); }
+            28%  { opacity:0.1; transform:translateX(3px)   scaleX(1.02);                          }
+            42%  { opacity:1;   transform:translateX(-2px)  scaleX(0.99); filter:brightness(1.9); }
+            58%  { opacity:0.5;                                                                     }
+            74%  { opacity:1;   transform:translateX(0)     scaleX(1);    filter:brightness(1.3); }
+            88%  { opacity:0.85;                                           filter:brightness(1);   }
+            100% { opacity:1;   transform:translateX(0)     scaleX(1);    filter:brightness(1);   }
+        }
+        @keyframes hudOnRight {
+            0%   { opacity:0;   transform:translateX(18px)  scaleX(0.88); filter:brightness(0);   }
+            18%  { opacity:0.9; transform:translateX(-3px)  scaleX(1.02); filter:brightness(2.8); }
+            28%  { opacity:0.1; transform:translateX(-3px)  scaleX(1.02);                          }
+            42%  { opacity:1;   transform:translateX(2px)   scaleX(0.99); filter:brightness(1.9); }
+            58%  { opacity:0.5;                                                                     }
+            74%  { opacity:1;   transform:translateX(0)     scaleX(1);    filter:brightness(1.3); }
+            88%  { opacity:0.85;                                           filter:brightness(1);   }
+            100% { opacity:1;   transform:translateX(0)     scaleX(1);    filter:brightness(1);   }
+        }
+        #sketch-btn.on { animation: hudOnLeft  2.4s ease-out          infinite; }
+        #adhan-btn.on  { animation: hudOnLeft  2.4s ease-out 0.45s    infinite; }
+        #back-btn.on   { animation: hudOnRight 2.4s ease-out 0.22s    infinite; }
+        #back-btn:hover, #sketch-btn:hover, #adhan-btn:hover {
+            color: rgba(196,175,248,1);
+            background: rgba(196,175,248,0.08);
+            box-shadow: inset 0 0 0 1px rgba(196,175,248,0.5),
+                        0 0 14px rgba(196,175,248,0.18);
+        }
+        .hud-btn-icon { font-style: normal; font-size: 0.8rem; opacity: 0.75; line-height:1; }
+
+        /* ── Premium AR Button ── */
+        #premium-ar-btn {
+            position: fixed;
+            top: 62px;
+            right: 24px;
+            z-index: 70;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            border-radius: 30px;
+            background: rgba(249, 213, 139, 0.1);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(249, 213, 139, 0.5);
+            color: var(--gold);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.58rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(249, 213, 139, 0.15), inset 0 0 8px rgba(249, 213, 139, 0.1);
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            pointer-events: auto;
+            opacity: 0; /* Hidden initially, shown in revealHUD */
+        }
+
+        #premium-ar-btn.on {
+            animation: arPulseGlow 3s infinite;
+        }
+
+        #premium-ar-btn:hover {
+            background: rgba(249, 213, 139, 0.2);
+            box-shadow: 0 0 30px rgba(249, 213, 139, 0.3), inset 0 0 12px rgba(249, 213, 139, 0.2);
+            border-color: rgba(249, 213, 139, 0.9);
+            transform: scale(1.05);
+        }
+
+        @keyframes arPulseGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(249, 213, 139, 0.2), inset 0 0 10px rgba(249, 213, 139, 0.1); }
+            50% { box-shadow: 0 0 35px rgba(249, 213, 139, 0.5), inset 0 0 15px rgba(249, 213, 139, 0.2); }
+        }
+
+        .ar-icon {
+            width: 18px;
+            height: 18px;
+            fill: none;
+            stroke: var(--gold);
+            stroke-width: 1.8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* Loader */
+        #loader {
+            position:fixed; inset:0; z-index:80; display:flex;
+            flex-direction:column; align-items:center; justify-content:center;
+            background:var(--bg); opacity:0; pointer-events:none;
+            transition:opacity 0.5s ease;
+        }
+        #loader.on { opacity:1; pointer-events:all; }
+        .loader-txt { font-size:0.6rem; letter-spacing:0.3em; color:var(--gold); text-transform:uppercase; margin-bottom:18px; }
+        .loader-bar {
+            width:180px; height:1px; background:rgba(249,213,139,0.15);
+            position:relative; overflow:hidden;
+        }
+        .loader-bar::after {
+            content:''; position:absolute; top:0; left:-100%; width:100%; height:100%;
+            background:var(--gold); animation:loaderAnim 1.4s ease-in-out infinite;
+        }
+        @keyframes loaderAnim { to { left:100%; } }
+
+        /* Intro */
+        #intro-overlay {
+            position:fixed; inset:0; z-index:100;
+            display:flex; flex-direction:column; align-items:center; justify-content:center;
+            background: rgba(7,5,15,0.95);
+            backdrop-filter: blur(10px);
+            transform-origin: center center;
+            animation: smokeSettle 1.8s ease-out forwards;
+        }
+        #intro-overlay.out { pointer-events:none; animation: smokeRise 1.6s ease-in forwards; }
+
+        @keyframes smokeSettle {
+            0%   { opacity:0;    filter:blur(40px); transform:translateY(18%) scale(1.12); }
+            20%  { opacity:0.30; filter:blur(22px); transform:translateY(10%) scale(1.08); }
+            50%  { opacity:0.72; filter:blur(10px); transform:translateY(4%)  scale(1.04); }
+            80%  { opacity:0.92; filter:blur(3px);  transform:translateY(1%)  scale(1.01); }
+            100% { opacity:1;    filter:blur(0px);  transform:translateY(0)   scale(1);    }
+        }
+        @keyframes smokeRise {
+            0%   { transform:translateY(0)    scale(1.00); opacity:1;    filter:blur(0px);  }
+            15%  { transform:translateY(-3%)  scale(1.01); opacity:0.92; filter:blur(2px);  }
+            45%  { transform:translateY(-12%) scale(1.05); opacity:0.55; filter:blur(12px); }
+            75%  { transform:translateY(-24%) scale(1.09); opacity:0.20; filter:blur(28px); }
+            100% { transform:translateY(-38%) scale(1.13); opacity:0;    filter:blur(48px); }
+        }
+
+        .intro-logo  { height:80px; margin-bottom:32px; opacity:0.85; }
+        .intro-tag   { font-size:0.5rem; letter-spacing:0.35em; color:rgba(196,175,248,0.7); text-transform:uppercase; margin-bottom:18px; opacity:0.7; }
+        .intro-title { font-family:'Playfair Display',serif; font-size:clamp(2rem,6vw,3.8rem); font-weight:900; text-align:center; line-height:1.1; margin-bottom:14px; }
+        .intro-title em { font-style:italic; color:var(--gold); }
+        .intro-coords{ font-size:0.55rem; letter-spacing:0.22em; color:rgba(196,175,248,0.4); text-transform:uppercase; margin-bottom:28px; }
+        .intro-divider{ width:40px; height:1px; background:rgba(196,175,248,0.2); margin:0 auto 32px; }
+        .btn-neon-wrap {
+            position: relative;
+            display: inline-block;
+            transition: transform 0.2s ease;
+        }
+        .btn-border-svg {
+            position: absolute;
+            inset: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            overflow: visible;
+        }
+        .btn-border-bg {
+            x: 1px; y: 1px;
+            width: calc(100% - 2px); height: calc(100% - 2px);
+            rx: 26px;
+            stroke: rgba(196,175,248,0.18);
+            stroke-width: 1.5;
+        }
+        .btn-border-light {
+            x: 1px; y: 1px;
+            width: calc(100% - 2px); height: calc(100% - 2px);
+            rx: 26px;
+            stroke: #c4aff8;
+            stroke-width: 2.5;
+            stroke-dasharray: 40 580;
+            stroke-dashoffset: 0;
+            filter: drop-shadow(0 0 4px #c4aff8) drop-shadow(0 0 10px rgba(196,175,248,0.8));
+            animation: borderTravel 4s linear infinite;
+        }
+        @keyframes borderTravel {
+            to { stroke-dashoffset: -620; }
+        }
+        #start-btn {
+            position: relative;
+            z-index: 1;
+            font-size:0.6rem; letter-spacing:0.28em; text-transform:uppercase;
+            color:#c4aff8;
+            background: rgba(7,5,15,0.94);
+            border: none;
+            padding:16px 44px; border-radius:26px;
+            cursor:pointer;
+            text-shadow: 0 0 8px #c4aff8, 0 0 20px rgba(196,175,248,0.5);
+            box-shadow: 0 0 20px rgba(196,175,248,0.08) inset;
+        }
+        .btn-neon-wrap:hover {
+            transform: scale(1.04);
+        }
+        .btn-neon-wrap:hover .btn-border-light {
+            filter: drop-shadow(0 0 6px #c4aff8) drop-shadow(0 0 16px rgba(196,175,248,0.9)) drop-shadow(0 0 30px rgba(196,175,248,0.5));
+        }
+
+        /* ── Points d'intérêt (Annotations) ── */
+        #annotations {
+            position:fixed; inset:0; pointer-events:none; z-index:100;
+        }
+        .ann {
+            position:absolute; top:0; left:0;
+            opacity:0; transition:opacity 0.5s ease;
+            pointer-events:none;
+        }
+
+        /* Simple Breathing Dot */
+        @keyframes simple-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(249, 213, 139, 0.4); transform: translate(-50%,-50%) scale(1); }
+            50% { box-shadow: 0 0 0 8px rgba(249, 213, 139, 0); transform: translate(-50%,-50%) scale(1.15); }
+        }
+
+        .ann-dot {
+            width:10px; height:10px;
+            background: var(--gold);
+            border-radius: 50%;
+            position:absolute; transform:translate(-50%,-50%);
+            cursor:pointer;
+            z-index: 2;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: simple-pulse 2s infinite;
+        }
+        .ann:hover .ann-dot {
+            transform: translate(-50%,-50%) scale(1.6);
+            background: #fff;
+            animation: none;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
+        }
+
+        /* Lignes HUD - Clean */
+        .ann-svg {
+            position:absolute; top:0; left:0;
+            width:300px; height:300px;
+            pointer-events:none; overflow:visible;
+        }
+        .ann-svg line {
+            stroke: var(--gold);
+            stroke-width: 1;
+            opacity: 0.3;
+            transition: all 0.3s ease;
+        }
+        .ann:hover .ann-svg line {
+            opacity: 0.8; stroke: #fff; stroke-width: 1.2;
+        }
+
+        /* Animations continues pour les textes et lignes d'annotation */
+        @keyframes label-float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+        @keyframes line-expand {
+            0%, 100% { width: 15px; opacity: 0.4; }
+            50% { width: calc(100% - 30px); opacity: 0.8; }
+        }
+        @keyframes text-glow {
+            0%, 100% {
+                color: var(--gold);
+                text-shadow: 0 0 4px rgba(249, 213, 139, 0.2);
+            }
+            50% {
+                color: #fff;
+                text-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+            }
+        }
+        @keyframes sub-glow {
+            0%, 100% {
+                color: rgba(249, 213, 139, 0.4);
+                opacity: 0.6;
+                transform: translateY(0);
+            }
+            50% {
+                color: rgba(255, 255, 255, 0.8);
+                opacity: 1;
+                transform: translateY(1px);
+            }
+        }
+
+        /* Label - Elegant & Minimal */
+        .ann-label {
+            position:absolute;
+            white-space:nowrap;
+            padding: 10px;
+            margin: -10px;
+            cursor: pointer;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: label-float 3s infinite ease-in-out;
+        }
+        
+        .ann:hover .ann-label {
+            transform: translateY(-4px);
+            animation: none;
+        }
+
+        .ann-label::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            left: 10px;
+            width: 0;
+            height: 1px;
+            background: #fff;
+            transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 0 8px rgba(255,255,255,0.4);
+            animation: line-expand 3s infinite ease-in-out;
+        }
+        .ann.side-left .ann-label::after {
+            left: auto;
+            right: 10px;
+        }
+        .ann:hover .ann-label::after {
+            width: calc(100% - 20px);
+            animation: none;
+        }
+
+        .ann-label-name {
+            display:block;
+            font-size:0.55rem; letter-spacing:0.2em; text-transform:uppercase;
+            font-family:'Inter',sans-serif; font-weight:600;
+            color: var(--gold);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: text-glow 3s infinite ease-in-out;
+        }
+        .ann:hover .ann-label-name {
+            color: #fff;
+            letter-spacing: 0.25em;
+            text-shadow: 0 0 12px rgba(255,255,255,0.4);
+            animation: none;
+        }
+
+        .ann-label-sub {
+            display:block;
+            font-size:0.4rem; letter-spacing:0.12em; text-transform:uppercase;
+            color: rgba(249, 213, 139, 0.4);
+            font-family:'Inter',sans-serif;
+            margin-top:2px;
+            opacity: 0.6;
+            transform: translateY(0);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: sub-glow 3s infinite ease-in-out;
+        }
+        .ann:hover .ann-label-sub {
+            color: rgba(255,255,255,0.8);
+            opacity: 1;
+            transform: translateY(2px);
+            animation: none;
+        }
+
+        /* ── Slider custom (côté droit) ── */
+        #toggle-bar {
+            position:fixed; right:20px; top:50%; transform:translateY(-50%);
+            display:flex; flex-direction:column; align-items:center; gap:8px;
+            z-index:60; opacity:0; transition:opacity 1s ease 0.8s; pointer-events:none;
+            user-select:none; -webkit-user-select:none;
+        }
+        #toggle-bar.on { opacity:1; pointer-events:all; }
+
+        /* Label haut */
+        #slider-top-label {
+            font-size:0.32rem; letter-spacing:0.24em; text-transform:uppercase;
+            color:rgba(249,213,139,0.5); font-family:'Inter',sans-serif;
+            writing-mode:vertical-rl; transform:rotate(180deg);
+        }
+
+        /* Zone de drag */
+        #slider-track {
+            position:relative; width:36px; height:160px;
+            cursor:grab; touch-action:none;
+        }
+        #slider-track:active { cursor:grabbing; }
+
+        /* Rail fin au centre */
+        #slider-rail {
+            position:absolute; top:0; left:50%; transform:translateX(-50%);
+            width:1px; height:100%; border-radius:1px;
+            background:rgba(249,213,139,0.15);
+        }
+        /* Fill doré */
+        #slider-fill {
+            position:absolute; bottom:0; left:50%; transform:translateX(-50%);
+            width:1px; border-radius:1px;
+            background:linear-gradient(to top, var(--gold), rgba(249,213,139,0.25));
+            height:100%;
+        }
+        /* Thumb — diamant doré */
+        #slider-thumb {
+            position:absolute; left:50%; top:0%;
+            transform:translate(-50%,-50%) rotate(45deg);
+            width:9px; height:9px;
+            background:var(--gold);
+            box-shadow:0 0 8px rgba(249,213,139,0.6);
+            transition:transform 0.1s, box-shadow 0.1s;
+        }
+        #slider-track:active #slider-thumb {
+            transform:translate(-50%,-50%) rotate(45deg) scale(1.5);
+            box-shadow:0 0 16px rgba(249,213,139,0.8);
+        }
+        /* Tirets déco sur le rail */
+        #slider-ticks {
+            position:absolute; top:0; left:50%; transform:translateX(-50%);
+            width:100%; height:100%; pointer-events:none;
+        }
+        .s-tick {
+            position:absolute; left:50%; transform:translateX(-50%);
+            height:1px; background:rgba(249,213,139,0.3);
+        }
+        .s-tick.major { width:10px; }
+        .s-tick.minor { width:5px; background:rgba(249,213,139,0.15); }
+
+        /* Label bas */
+        #toggle-label {
+            font-size:0.30rem; letter-spacing:0.24em; text-transform:uppercase;
+            color:rgba(249,213,139,0.25); font-family:'Inter',sans-serif;
+            writing-mode:vertical-rl; transform:rotate(180deg);
+            white-space:nowrap;
+        }
+
+        /* ── Panneau détail — même style que #info-panel ── */
+        #detail-panel {
+            position:fixed; bottom:0; left:0; right:0;
+            padding:72px 40px 36px; z-index:55;
+            background:linear-gradient(transparent, rgba(7,5,15,0.96) 38%);
+            transform:translateY(100%);
+            transition:transform 0.5s cubic-bezier(0.4,0,0.2,1), opacity 0.4s ease;
+            opacity:0; pointer-events:none;
+        }
+        #detail-panel.on {
+            transform:translateY(0);
+            opacity:1; pointer-events:all;
+        }
+        #detail-close {
+            position:absolute; top:18px; right:28px;
+            font-size:0.85rem; color:rgba(249,213,139,0.35); cursor:pointer;
+            transition:color 0.2s; line-height:1;
+            letter-spacing:0.1em;
+        }
+        #detail-close:hover { color:var(--gold); }
+        #detail-tag {
+            font-size:0.55rem; letter-spacing:0.25em; color:var(--gold);
+            text-transform:uppercase; margin-bottom:10px; opacity:0.7;
+        }
+        #detail-title {
+            font-family:'Playfair Display',serif;
+            font-size:clamp(1.4rem,3vw,2.2rem); font-weight:900;
+            line-height:1.1; margin-bottom:6px; color:#fff;
+        }
+        #detail-sub {
+            font-size:0.5rem; letter-spacing:0.18em; color:var(--gold);
+            text-transform:uppercase; opacity:0.5; margin-bottom:14px;
+        }
+        #detail-text {
+            font-size:0.78rem; color:rgba(240,234,248,0.65);
+            max-width:580px; line-height:1.75;
+        }
+        #detail-back {
+            display:inline-block; margin-top:16px;
+            font-size:0.58rem; letter-spacing:0.18em; text-transform:uppercase;
+            color:var(--gold); opacity:0.55; cursor:pointer;
+            transition:opacity 0.2s;
+        }
+        #detail-back:hover { opacity:1; }
+
+        /* ── Handle drag (mobile) ── */
+        #detail-handle {
+            display:none; width:36px; height:4px; border-radius:2px;
+            background:rgba(249,213,139,0.3); margin:0 auto 20px;
+        }
+
+        /* ── Positions sketch / adhan ── */
+        #sketch-btn { top:22px; left:24px; }
+        #adhan-btn  { top:62px; left:24px; }
+
+        /* ── États actifs ── */
+        #sketch-btn.active {
+            color: rgba(196,175,248,1);
+            background: rgba(196,175,248,0.12);
+            box-shadow: inset 0 0 0 1px rgba(196,175,248,0.55), 0 0 16px rgba(196,175,248,0.22);
+        }
+        #adhan-btn.playing {
+            color: var(--gold);
+            background: rgba(249,213,139,0.08);
+            box-shadow: inset 0 0 0 1px rgba(249,213,139,0.45), 0 0 16px rgba(249,213,139,0.18);
+            animation: adhanPulse 2s ease-in-out infinite;
+            opacity: 1;
+        }
+        @keyframes adhanPulse {
+            0%,100% { box-shadow: inset 0 0 0 1px rgba(249,213,139,0.3), 0 0 8px rgba(249,213,139,0.15); }
+            50%      { box-shadow: inset 0 0 0 1px rgba(249,213,139,0.6), 0 0 22px rgba(249,213,139,0.35); }
+        }
+
+        /* Dot cliquable */
+        .ann { cursor:pointer; }
+        .ann-dot { transition:transform 0.2s, background 0.2s; }
+        .ann:hover .ann-dot { transform:translate(-50%,-50%) scale(1.8); background:#fff; }
+        .ann:hover .ann-dot::after { animation: none; opacity: 0; }
+
+        /* ── Mode dessin : annotations sombres sur fond clair ── */
+        body.sketch-mode .ann-dot { background:#2a1a00; }
+        body.sketch-mode .ann-dot::after { background:#2a1a00; }
+
+        /* ── AR Error Modal ── */
+        #ar-modal {
+            position: fixed; inset: 0; z-index: 200;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(7,5,15,0.85);
+            backdrop-filter: blur(12px);
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.5s ease;
+            padding: 20px;
+        }
+        #ar-modal.on { opacity: 1; pointer-events: all; }
+        .ar-modal-box {
+            background: #0d0a1a;
+            border: 1px solid rgba(249, 213, 139, 0.2);
+            border-radius: 20px;
+            padding: 40px 30px;
+            max-width: 380px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+            transform: translateY(20px);
+            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        #ar-modal.on .ar-modal-box { transform: translateY(0); }
+        .ar-modal-icon { font-size: 2.5rem; margin-bottom: 20px; display: block; }
+        .ar-modal-title { font-family: 'Playfair Display', serif; color: var(--gold); font-size: 1.4rem; margin-bottom: 12px; }
+        .ar-modal-text { color: rgba(240, 234, 248, 0.6); font-size: 0.85rem; line-height: 1.6; margin-bottom: 25px; }
+        .ar-modal-btn {
+            background: var(--gold); color: #07050f;
+            border: none; padding: 12px 30px; border-radius: 30px;
+            font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase;
+            font-weight: 700; cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .ar-modal-btn:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(249, 213, 139, 0.3); }
+        body.sketch-mode .ann-svg .ann-line-v,
+        body.sketch-mode .ann-svg .ann-line-h { stroke:rgba(30,15,0,0.7); stroke-width:1px; }
+        body.sketch-mode .ann-label-name { color:rgba(30,15,0,0.9); }
+        body.sketch-mode .ann-label-sub  { color:rgba(30,15,0,0.5); }
+        body.sketch-mode .ann:hover .ann-dot { background:#000; }
+        body.sketch-mode #toggle-bar { filter:invert(1) brightness(0.4); }
+        body.sketch-mode #sketch-btn { color:#2a1a00; box-shadow:inset 0 0 0 1px rgba(30,15,0,0.35); background:rgba(245,240,232,0.65); }
+
+        @media (max-width:768px) {
+            #hud-data { display:none; }
+            #info-panel { padding:40px 20px 24px; }
+            .ann-label-name { font-size:0.42rem; letter-spacing:0.12em; }
+            .ann-label-sub  { font-size:0.34rem; }
+
+            /* Panneau détail mobile — padding réduit */
+            #detail-panel { padding: 52px 20px 28px; }
+            #detail-close { top: 14px; right: 18px; }
+            #detail-text  { font-size: 0.75rem; }
+            #sketch-btn  { display:none; } /* sketch shader non disponible sur mobile */
+            #adhan-btn   { font-size:0.46rem; padding:8px 14px; top:18px; left:16px; }
+
+            #premium-ar-btn { top: 58px; right: 16px; font-size: 0.48rem; padding: 8px 16px; }
+
+            #toggle-bar { right:12px; }
+            #slider-track { height:120px; }
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+<div class="vignette"></div>
+
+<div class="hud-corner hud-tl"></div>
+<div class="hud-corner hud-tr"></div>
+<div class="hud-corner hud-bl"></div>
+<div class="hud-corner hud-br"></div>
+
+<div id="hud-data">
+    LOCALISATION : GAO · MALI<br>
+    GPS : 16.2890°N · 0.0448°W<br>
+    ALTITUDE : 256 M · SRTM 90M<br>
+    PATRIMOINE UNESCO · 2004
+</div>
+
+<div id="info-panel">
+    <div class="panel-tag">Tombeau des Askia · Gao, Mali · XVe siècle</div>
+    <div class="panel-title">La Tour Pyramidale de Gao</div>
+    <div class="panel-desc">Érigée vers 1495 par Askia Mohamed I, cette tour de 17 mètres en banco — argile, paille et bois de rônier — marque le lieu de sépulture d'un des plus grands empereurs de l'Empire Songhaï. Classée Patrimoine Mondial de l'UNESCO en 2004.</div>
+    <div class="panel-hint">← Glissez pour explorer · Molette pour zoomer</div>
+</div>
+
+<button id="premium-ar-btn" onclick="openAR()">
+    <svg class="ar-icon" viewBox="0 0 24 24">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+        <line x1="12" y1="22.08" x2="12" y2="12"></line>
+    </svg>
+    Voir en AR
+</button>
+
+<!-- Modal AR non supporté -->
+<div id="ar-modal">
+    <div class="ar-modal-box">
+        <span class="ar-modal-icon">📱</span>
+        <div class="ar-modal-title" id="ar-modal-title">AR non supportée</div>
+        <div class="ar-modal-text" id="ar-modal-text">Votre appareil ne semble pas supporter la Réalité Augmentée.</div>
+        <button class="ar-modal-btn" onclick="closeArModal()">Compris</button>
+    </div>
+</div>
+
+<div id="annotations"></div>
+<a href="#" id="back-btn" onclick="history.back(); return false;"><i class="hud-btn-icon">←</i> Retour</a>
+<button id="sketch-btn" onclick="toggleSketch()"><i class="hud-btn-icon">✦</i> Mode Dessin</button>
+<button id="adhan-btn" onclick="toggleAdhan()"><i class="hud-btn-icon">♪</i> Adhan</button>
+<!-- Conteneur pour Model Viewer (AR) -->
+<div id="ar-container" style="position:fixed; top:0; left:0; width:1px; height:1px; overflow:hidden; z-index:-1; pointer-events:none;">
+    <model-viewer id="ar-viewer"
+        src="assets/3d/Tombeaux_des_Askia_ar.glb"
+        ar ar-modes="webxr scene-viewer quick-look"
+        ar-scale="auto"
+        ar-placement="floor"
+        bounds="tight"
+        reveal="auto" loading="eager"
+        camera-controls touch-action="pan-y"
+        style="width:100%; height:100%; background:transparent;">
+    </model-viewer>
+</div>
+
+<!-- Slider custom -->
+<div id="toggle-bar">
+    <div id="slider-top-label">100%</div>
+    <div id="slider-track">
+        <div id="slider-rail"></div>
+        <div id="slider-fill"></div>
+        <div id="slider-ticks"></div>
+        <div id="slider-thumb"></div>
+    </div>
+    <div id="toggle-label">Annotations</div>
+</div>
+
+<!-- Panneau détail (clic annotation) -->
+<div id="detail-panel">
+    <div id="detail-handle"></div>
+    <div id="detail-close" onclick="closeDetail()">✕</div>
+    <div id="detail-tag">Patrimoine UNESCO · Gao, Mali</div>
+    <div id="detail-title"></div>
+    <div id="detail-sub"></div>
+    <div id="detail-text"></div>
+    <div id="detail-back" onclick="closeDetail()">← Retour à la vue générale</div>
+</div>
+
+<div id="loader">
+    <div class="loader-txt" id="loader-txt">Chargement du modèle 3D</div>
+    <div class="loader-bar" id="loader-bar"></div>
+    <div id="loader-error" style="display:none; text-align:center; margin-top:24px;">
+        <div style="font-size:0.6rem; color:rgba(249,213,139,0.5); letter-spacing:0.15em; margin-bottom:14px;" id="loader-error-msg">Impossible de charger le modèle</div>
+        <button onclick="location.reload()" style="font-size:0.55rem; letter-spacing:0.2em; text-transform:uppercase; border:1px solid rgba(249,213,139,0.4); color:rgba(249,213,139,0.8); background:rgba(249,213,139,0.08); padding:10px 28px; border-radius:20px; cursor:pointer;">
+            ↺ Réessayer
+        </button>
+    </div>
+</div>
+
+<div id="intro-overlay">
+    <img class="intro-logo" src="assets/images/logo-kabakoo.png" alt="Kabakoo" onerror="this.style.display='none'">
+    <div class="intro-tag">Patrimoine Mondial UNESCO · 2004</div>
+    <h1 class="intro-title">Tombeau des <em>Askia</em></h1>
+    <p class="intro-coords">16.2890°N · 0.0448°W · Gao, Mali</p>
+    <div class="intro-divider"></div>
+    <div class="btn-neon-wrap">
+        <svg class="btn-border-svg" aria-hidden="true" fill="none">
+            <rect class="btn-border-bg"/>
+            <rect class="btn-border-light"/>
+        </svg>
+        <button id="start-btn" onclick="startExperience()">Explorer en 3D</button>
+    </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   DÉTECTION MOBILE — toutes les optimisations en dépendent
+═══════════════════════════════════════════════════════════ */
+const IS_MOBILE = window.innerWidth < 768 ||
+    /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+/* ═══════════════════════════════════════════════════════════
+   CHARGEMENT THREE.JS — parallèle (au lieu de cascade)
+   Sur mobile : on saute les scripts de post-processing
+═══════════════════════════════════════════════════════════ */
+function loadScript(src) {
+    return new Promise(resolve => {
+        const s = document.createElement('script');
+        s.src = src; s.onload = resolve; s.onerror = resolve;
+        document.head.appendChild(s);
+    });
+}
+
+const CDN = 'https://cdn.jsdelivr.net/npm/three@0.128.0';
+
+function showLoaderError(msg) {
+    const bar = document.getElementById('loader-bar');
+    if (bar) bar.style.display = 'none';
+    const errEl = document.getElementById('loader-error');
+    if (errEl) errEl.style.display = 'block';
+    const msgEl = document.getElementById('loader-error-msg');
+    if (msgEl && msg) msgEl.textContent = msg;
+}
+
+loadScript(CDN + '/build/three.min.js').then(() => {
+    /* Scripts de base — chargés en parallèle */
+    const base = [
+        loadScript(CDN + '/examples/js/controls/OrbitControls.js'),
+        loadScript(CDN + '/examples/js/loaders/GLTFLoader.js'),
+        loadScript(CDN + '/examples/js/loaders/DRACOLoader.js'),
+    ];
+    /* Post-processing desktop : ordre strict (dépendances) */
+    if (!IS_MOBILE) {
+        return Promise.all(base)
+            .then(() => loadScript(CDN + '/examples/js/shaders/CopyShader.js'))
+            .then(() => loadScript(CDN + '/examples/js/postprocessing/EffectComposer.js'))
+            .then(() => Promise.all([
+                loadScript(CDN + '/examples/js/postprocessing/RenderPass.js'),
+                loadScript(CDN + '/examples/js/postprocessing/ShaderPass.js'),
+            ]));
+    }
+    return Promise.all(base);
+}).then(initScene).catch(err => {
+    console.error('Erreur chargement scripts:', err);
+    showLoaderError('Erreur de chargement — vérifiez votre connexion');
+});
+
+/* ═══════════════════════════════════════════════════════════
+   SCÈNE THREE.JS
+═══════════════════════════════════════════════════════════ */
+function initScene() {
+    const canvas = document.getElementById('c');
+    const W = window.innerWidth, H = window.innerHeight;
+
+    /* Renderer — paramètres allégés sur mobile */
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: !IS_MOBILE });
+    renderer.setSize(W, H);
+    renderer.setPixelRatio(Math.min(devicePixelRatio, IS_MOBILE ? 1.5 : 2));
+    renderer.outputEncoding      = THREE.sRGBEncoding;
+    renderer.toneMapping         = THREE.LinearToneMapping;
+    renderer.toneMappingExposure = 1.0;
+    renderer.shadowMap.enabled   = !IS_MOBILE; /* désactivé sur mobile */
+    renderer.shadowMap.type      = THREE.PCFSoftShadowMap;
+
+    /* Scène */
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x07050f);
+    scene.fog        = new THREE.Fog(0x07050f, 600, 1400);
+
+    /* Caméra — FOV 40° (télescopique, comme Saydnaya) */
+    const camera = new THREE.PerspectiveCamera(40, W / H, 1, 3000);
+    camera.position.set(0, 280, 280);
+
+    /* Éclairage identique au Material Preview de Blender
+       HemisphereLight = simulation HDRI (ciel + sol)
+       DirectionalLight = soleil principal */
+    const hemi = new THREE.HemisphereLight(0xddeeff, 0xffe0b0, 0.5);
+    scene.add(hemi);
+
+    const sun = new THREE.DirectionalLight(0xffffff, 0.9);
+    sun.position.set(80, 200, 100);
+    if (!IS_MOBILE) {
+        sun.castShadow           = true;
+        sun.shadow.mapSize.width = 1024;
+        sun.shadow.mapSize.height= 1024;
+        sun.shadow.camera.near   = 1;
+        sun.shadow.camera.far    = 800;
+        sun.shadow.camera.left   = -200;
+        sun.shadow.camera.right  = 200;
+        sun.shadow.camera.top    = 200;
+        sun.shadow.camera.bottom = -200;
+        sun.shadow.bias          = -0.001;
+    }
+    scene.add(sun);
+
+    const fill = new THREE.DirectionalLight(0xc8d8ff, 0.25);
+    fill.position.set(-60, 80, -80);
+    scene.add(fill);
+
+    /* GLTFLoader — DRACO avec deux sources de décodeur */
+    const draco = new THREE.DRACOLoader();
+    /* jsDelivr en premier (plus rapide sur mobile en Afrique), gstatic en fallback */
+    draco.setDecoderPath(CDN + '/examples/js/libs/draco/gltf/');
+    const loader = new THREE.GLTFLoader();
+    loader.setDRACOLoader(draco);
+
+    loader.load('assets/3d/Tombeaux_des_Askia.glb', gltf => {
+        const scene3d = gltf.scene;
+        const maxAniso = IS_MOBILE ? 2 : renderer.capabilities.getMaxAnisotropy();
+        scene3d.traverse(obj => {
+            if (obj.isMesh) {
+                const isSat = obj.name === 'Carte_Satellite';
+                obj.castShadow    = !IS_MOBILE && !isSat;
+                obj.receiveShadow = !IS_MOBILE;
+                if (obj.material) {
+                    obj.material.envMapIntensity = 0;
+                    /* DoubleSide uniquement sur satellite — coûteux sur mobile */
+                    obj.material.side = isSat ? THREE.DoubleSide : THREE.FrontSide;
+                    if (!isSat) obj.material.emissiveIntensity = 0;
+                    obj.material.needsUpdate = true;
+                    if (obj.material.map) {
+                        obj.material.map.encoding   = THREE.sRGBEncoding;
+                        obj.material.map.anisotropy = maxAniso;
+                    }
+                }
+            }
+        });
+
+        scene.add(scene3d);
+
+        /* Centre sur l'origine de la Carte_Satellite = position du modèle */
+        const sat = scene3d.getObjectByName('Carte_Satellite');
+        const tgt = new THREE.Vector3();
+        if (sat) sat.getWorldPosition(tgt);
+        tgt.y = 0;
+        controls.target.copy(tgt);
+        window._modelCenter = tgt.clone();
+        controls.update();
+
+        /* Annotations */
+        buildAnnotations(scene3d, camera, renderer);
+
+        /* Illustrations 3D dans la scène */
+        addIllustrations3D(scene, scene3d);
+
+        /* ── Audio positionnel : Appel à la prière depuis le sommet de la tour ── */
+        setupAdhan(scene, scene3d, camera);
+
+        window._modelLoaded = true;
+    }, xhr => {
+        /* Progression du téléchargement GLB */
+        const txt = document.getElementById('loader-txt');
+        if (!txt) return;
+        if (xhr.total && xhr.total > 0) {
+            const pct = Math.round(xhr.loaded / xhr.total * 100);
+            txt.textContent = `Chargement du modèle 3D — ${pct}%`;
+        } else if (xhr.loaded > 0) {
+            txt.textContent = `Chargement… ${Math.round(xhr.loaded / 1024)}  Ko`;
+        }
+    }, err => {
+        console.error('GLB erreur:', err);
+        showLoaderError('Erreur modèle 3D — vérifiez votre connexion et réessayez');
+    });
+
+    /* OrbitControls — identique à saydnaya.amnesty.org */
+    const controls = new THREE.OrbitControls(camera, canvas);
+    controls.target.set(52.82, 0, -26.69);
+    controls.minPolarAngle   = 0.7;   /* ~40° — pas trop haut */
+    controls.maxPolarAngle   = 1.1;   /* ~63° — pas de vue rasante */
+    controls.enablePan       = false;
+    controls.enableZoom      = true;
+    controls.zoomSpeed       = 0.2;
+    controls.minDistance     = 60;
+    controls.maxDistance     = 450;
+    controls.autoRotate      = true;
+    controls.autoRotateSpeed = 0.18;   /* rotation lente et continue */
+    controls.enableDamping   = true;
+    controls.dampingFactor   = 0.05;
+    controls.update();
+
+    /* ── Shader dessin au crayon ── */
+    const pr = Math.min(devicePixelRatio, 2);
+    const SketchShader = {
+        uniforms: {
+            tDiffuse:      { value: null },
+            resolution:    { value: new THREE.Vector2(W * pr, H * pr) },
+            strength:      { value: 0.0 }
+        },
+        vertexShader: `
+            varying vec2 vUv;
+            void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
+        `,
+        fragmentShader: `
+            uniform sampler2D tDiffuse;
+            uniform vec2 resolution;
+            uniform float strength;
+            varying vec2 vUv;
+
+            float luma(vec3 c){ return dot(c, vec3(0.299,0.587,0.114)); }
+
+            float sobel(vec2 uv){
+                vec2 px = 1.2 / resolution;
+                float tl=luma(texture2D(tDiffuse,uv+vec2(-px.x, px.y)).rgb);
+                float tm=luma(texture2D(tDiffuse,uv+vec2(0.0,   px.y)).rgb);
+                float tr=luma(texture2D(tDiffuse,uv+vec2( px.x, px.y)).rgb);
+                float ml=luma(texture2D(tDiffuse,uv+vec2(-px.x, 0.0 )).rgb);
+                float mr=luma(texture2D(tDiffuse,uv+vec2( px.x, 0.0 )).rgb);
+                float bl=luma(texture2D(tDiffuse,uv+vec2(-px.x,-px.y)).rgb);
+                float bm=luma(texture2D(tDiffuse,uv+vec2(0.0,  -px.y)).rgb);
+                float br=luma(texture2D(tDiffuse,uv+vec2( px.x,-px.y)).rgb);
+                float gx = -tl -2.0*ml -bl +tr +2.0*mr +br;
+                float gy =  tl +2.0*tm +tr -bl -2.0*bm -br;
+                return clamp(sqrt(gx*gx+gy*gy)*0.9, 0.0, 1.0);
+            }
+
+            float hatch(vec2 uv, float angle, float freq){
+                float c=cos(angle), s=sin(angle);
+                return fract((c*uv.x - s*uv.y) * freq);
+            }
+
+            void main(){
+                vec4 col  = texture2D(tDiffuse, vUv);
+                float lum = luma(col.rgb);
+                float edge = sobel(vUv);
+
+                /* Hachures légères sur zones sombres uniquement */
+                vec2 huv = vUv * resolution / 6.0;
+                float h1 = step(0.6, hatch(huv, 0.785, 1.0));
+                float h2 = step(0.6, hatch(huv, 2.356, 1.0));
+                float hatching = 0.0;
+                if(lum < 0.25) hatching += h1 * (0.25-lum) * 0.35;
+                if(lum < 0.12) hatching += h2 * (0.12-lum) * 0.35;
+                hatching = clamp(hatching, 0.0, 0.18);
+
+                /* Bruit papier discret */
+                float noise = fract(sin(dot(vUv, vec2(127.1,311.7))) * 43758.5) * 0.02;
+
+                float sketch = clamp(1.0 - edge - hatching + noise, 0.0, 1.0);
+                vec3 sketchCol = vec3(sketch * 0.88 + 0.12);
+
+                gl_FragColor = vec4(mix(col.rgb, sketchCol, strength), 1.0);
+            }
+        `
+    };
+
+    /* ── EffectComposer (desktop uniquement — trop lourd sur mobile) ── */
+    let composer = null, sketchPass = null;
+    if (!IS_MOBILE) {
+        composer  = new THREE.EffectComposer(renderer);
+        composer.addPass(new THREE.RenderPass(scene, camera));
+        sketchPass = new THREE.ShaderPass(SketchShader);
+        sketchPass.renderToScreen = true;
+        composer.addPass(sketchPass);
+        composer.renderTarget1.texture.encoding = THREE.sRGBEncoding;
+        composer.renderTarget2.texture.encoding = THREE.sRGBEncoding;
+    }
+
+    window._composer   = composer;
+    window._sketchPass = sketchPass;
+    window._sketchOn   = false;
+
+    /* Resize */
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        if (composer) {
+            composer.setSize(window.innerWidth, window.innerHeight);
+            const pr2 = Math.min(devicePixelRatio, 2);
+            sketchPass.uniforms.resolution.value.set(window.innerWidth * pr2, window.innerHeight * pr2);
+        }
+    });
+
+    /* Boucle */
+    (function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        /* Mobile : rendu direct (pas de post-processing) */
+        if (IS_MOBILE || !window._composer) {
+            renderer.render(scene, camera);
+        } else {
+            window._composer.render();
+        }
+        updateAnnotations();
+
+        /* Met à jour la position du listener audio selon la caméra */
+        if (window._audioPanner) {
+            const cp = camera.position;
+            const cd = new THREE.Vector3();
+            camera.getWorldDirection(cd);
+            const au = new THREE.Vector3(0, 1, 0);
+            const ctx = window._audioPanner.context;
+            if (ctx.listener.positionX) {
+                ctx.listener.positionX.value = cp.x;
+                ctx.listener.positionY.value = cp.y;
+                ctx.listener.positionZ.value = cp.z;
+                ctx.listener.forwardX.value  = cd.x;
+                ctx.listener.forwardY.value  = cd.y;
+                ctx.listener.forwardZ.value  = cd.z;
+                ctx.listener.upX.value = au.x;
+                ctx.listener.upY.value = au.y;
+                ctx.listener.upZ.value = au.z;
+            }
+        }
+    })();
+
+    window._controls = controls;
+    window._camera   = camera;
+    window._scene    = scene;
+}
+
+/* ── Toggle mode dessin ── */
+function toggleSketch() {
+    window._sketchOn = !window._sketchOn;
+    const btn = document.getElementById('sketch-btn');
+    btn.classList.toggle('active', window._sketchOn);
+
+    const pass = window._sketchPass;
+    if (!pass) return;
+
+    const target = window._sketchOn ? 1.0 : 0.0;
+    const start  = pass.uniforms.strength.value;
+    const t0     = performance.now();
+    const dur    = 800;
+
+    /* Fond scène + classe CSS annotations */
+    const scene = window._scene;
+    if (window._sketchOn) {
+        document.body.classList.add('sketch-mode');
+        if (scene) { scene.background = new THREE.Color(0xf5f0e8); scene.fog = null; }
+    } else {
+        document.body.classList.remove('sketch-mode');
+    }
+
+    (function tick(now) {
+        const t = Math.min((now - t0) / dur, 1);
+        const e = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+        pass.uniforms.strength.value = start + (target - start) * e;
+        if (t < 1) requestAnimationFrame(tick);
+        else if (!window._sketchOn && scene) {
+            scene.background = new THREE.Color(0x07050f);
+            scene.fog = new THREE.Fog(0x07050f, 600, 1400);
+        }
+    })(t0);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   INFOS DÉTAILLÉES PAR PARTIE
+═══════════════════════════════════════════════════════════ */
+const ANN_INFO = {
+    'Tombeaux': {
+        title:'La Tour Pyramidale',
+        sub:'~17 m · Banco · vers 1495',
+        text:'Érigée par Askia Mohamed I, cette tour de 17 mètres en banco — argile mêlée de paille et renforcée de piquets de rônier — est le cœur du monument. Sa forme pyramidale à gradins est caractéristique de l\'architecture soudano-sahélienne, unique sur ce continent.'
+    },
+    'La_base': {
+        title:'Enceinte Principale',
+        sub:'Cour intérieure · Banco',
+        text:'La vaste enceinte rectangulaire en banco délimite l\'espace sacré du tombeau. Elle mesure environ 70 mètres de long et accueille la cour intérieure ouverte, lieu de rassemblement des fidèles lors des grandes cérémonies religieuses.'
+    },
+    'Espace_des_femmes': {
+        title:'Espace des Femmes',
+        sub:'Salle de prière séparée',
+        text:'Séparé selon la tradition islamique, cet espace est dédié aux femmes pour la prière. Il reflète l\'organisation spatiale des mosquées de l\'Empire Songhaï au XVe siècle, où hommes et femmes priaient dans des espaces distincts.'
+    },
+    'Espace_des_hommes': {
+        title:'Espace des Hommes',
+        sub:'Mosquée principale',
+        text:'La grande salle de prière orientée vers La Mecque. C\'est ici que se tiennent les cérémonies religieuses et les prières du vendredi depuis le XVe siècle, témoignant de l\'islamisation de l\'Empire Songhaï sous Askia Mohamed I.'
+    },
+    'Branche': {
+        title:'Les Piquets de Rônier',
+        sub:'Bois de palmier rônier',
+        text:'Ces piquets en bois de palmier rônier qui dépassent de la surface jouent un rôle structurel essentiel. Ils servent d\'échafaudage naturel lors du crépissage collectif — un rituel communautaire annuel maintenu depuis des siècles pour préserver l\'édifice.'
+    },
+    'Haute_parleur': {
+        title:'Minaret',
+        sub:'Appel à la prière · Banco',
+        text:'Le minaret marque le point le plus élevé depuis lequel le muezzin lance l\'appel à la prière cinq fois par jour. Intégré à l\'architecture en banco, il témoigne de la fusion entre les traditions constructives locales et les pratiques islamiques.'
+    },
+    '__cimetiere__': {
+        title:'Cimetière Royal',
+        sub:'Askia Mohamed I · †1538',
+        text:'Lieu de sépulture d\'Askia Mohamed I, fondateur du monument et l\'un des plus grands empereurs de l\'Empire Songhaï. Plusieurs de ses successeurs y sont également enterrés. Ce cimetière reste un lieu de pèlerinage pour les habitants de Gao et les visiteurs du monde entier.'
+    }
+};
+
+/* ── Slider custom (remplace input[type=range]) ── */
+function onLayerSlider(val) {
+    val = Math.max(0, Math.min(100, val));
+    const t     = val / 100;
+    const fill  = document.getElementById('slider-fill');
+    const thumb = document.getElementById('slider-thumb');
+    const lbl   = document.getElementById('slider-top-label');
+    if (fill)  fill.style.height = val + '%';
+    if (thumb) thumb.style.top   = (100 - val) + '%';
+    if (lbl)   lbl.textContent   = Math.round(val) + '%';
+
+    document.querySelectorAll('.ann').forEach(el => {
+        el.style.opacity       = t > 0 ? '' : '0';
+        el.style.pointerEvents = t > 0.05 ? '' : 'none';
+    });
+    window._annOpacityScale = t;
+
+    if (window._illusMeshes) {
+        window._illusMeshes.forEach(m => {
+            m.material.opacity = (window._illusOpacity || 1) * t;
+        });
+    }
+}
+
+function initCustomSlider() {
+    const track = document.getElementById('slider-track');
+    if (!track) return;
+
+    /* Tirets décoratifs */
+    const ticks = document.getElementById('slider-ticks');
+    for (let i = 0; i <= 10; i++) {
+        const tk = document.createElement('div');
+        tk.className = 's-tick ' + (i % 5 === 0 ? 'major' : 'minor');
+        tk.style.top = (i * 10) + '%';
+        ticks.appendChild(tk);
+    }
+
+    let dragging = false;
+
+    function getVal(clientY) {
+        const rect = track.getBoundingClientRect();
+        const raw  = 1 - (clientY - rect.top) / rect.height;
+        return Math.round(Math.max(0, Math.min(1, raw)) * 100);
+    }
+
+    track.addEventListener('mousedown',  e => { dragging = true; onLayerSlider(getVal(e.clientY)); });
+    track.addEventListener('touchstart', e => { dragging = true; onLayerSlider(getVal(e.touches[0].clientY)); }, { passive:true });
+
+    window.addEventListener('mousemove',  e => { if (dragging) onLayerSlider(getVal(e.clientY)); });
+    window.addEventListener('touchmove',  e => { if (dragging) onLayerSlider(getVal(e.touches[0].clientY)); }, { passive:true });
+
+    window.addEventListener('mouseup',   () => dragging = false);
+    window.addEventListener('touchend',  () => dragging = false);
+
+    /* État initial */
+    onLayerSlider(100);
+}
+
+/* ── Zoom animé vers une position 3D ── */
+function zoomToAnnotation(pos) {
+    const cam  = window._camera;
+    const ctrl = window._controls;
+    if (!cam || !ctrl) return;
+    ctrl.autoRotate = false;
+
+    /* Mémorise position + cible avant le zoom pour le retour */
+    window._savedCamPos = cam.position.clone();
+    window._savedCamTgt = ctrl.target.clone();
+
+    const startPos = cam.position.clone();
+    const startTgt = ctrl.target.clone();
+    const endTgt   = pos.clone();
+    const horiz = new THREE.Vector3(
+        cam.position.x - endTgt.x, 0, cam.position.z - endTgt.z
+    ).normalize();
+    /* Sur mobile le panneau couvre 56vh du bas — la caméra monte
+       pour que la partie sélectionnée apparaisse dans les 44% visibles */
+    const isMob    = window.innerWidth < 768;
+    const dist     = isMob ? 42 : 55;
+    const yOffset  = isMob ? 30 : 22;
+    const endPos = endTgt.clone()
+        .add(horiz.multiplyScalar(dist))
+        .add(new THREE.Vector3(0, yOffset, 0));
+
+    const dur = 1400, t0 = performance.now();
+    function ease(t) { return t<0.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2; }
+    (function tick(now) {
+        const t = Math.min((now-t0)/dur, 1);
+        const e = ease(t);
+        cam.position.lerpVectors(startPos, endPos, e);
+        ctrl.target.lerpVectors(startTgt, endTgt, e);
+        ctrl.update();
+        if (t < 1) {
+            requestAnimationFrame(tick);
+        } else {
+            /* Rotation lente autour de la partie sélectionnée */
+            ctrl.target.copy(endTgt);
+            ctrl.autoRotate      = true;
+            ctrl.autoRotateSpeed = 0.28;
+            ctrl.update();
+        }
+    })(t0);
+}
+
+/* ── Ouvrir / fermer le panneau détail ── */
+function openDetail(key, pos) {
+    const info = ANN_INFO[key] || ANN_INFO['__cimetiere__'];
+
+    const infoPanel = document.getElementById('info-panel');
+    const backBtn   = document.getElementById('back-btn');
+
+    /* Cache le bouton retour et les autres boutons (AR, Dessin, Adhan) */
+    if (backBtn) { backBtn.classList.remove('on'); backBtn.style.opacity = '0'; backBtn.style.pointerEvents = 'none'; }
+    const arBtn = document.getElementById('premium-ar-btn');
+    const sketchBtn = document.getElementById('sketch-btn');
+    const adhanBtn = document.getElementById('adhan-btn');
+    if (arBtn) { arBtn.classList.remove('on'); arBtn.style.opacity = '0'; arBtn.style.pointerEvents = 'none'; }
+    if (sketchBtn) { sketchBtn.classList.remove('on'); sketchBtn.style.opacity = '0'; sketchBtn.style.pointerEvents = 'none'; }
+    if (adhanBtn) { adhanBtn.classList.remove('on'); adhanBtn.style.opacity = '0'; adhanBtn.style.pointerEvents = 'none'; }
+
+    /* Fait disparaître le panneau, puis le remonte en mode titre seul */
+    infoPanel.style.transition    = 'opacity 0.3s ease';
+    infoPanel.style.opacity       = '0';
+    infoPanel.style.pointerEvents = 'none';
+
+    setTimeout(() => {
+        /* Titre seul visible en haut */
+        infoPanel.querySelector('.panel-title').textContent = 'La Tour Pyramidale de Gao';
+        infoPanel.classList.add('detail-mode');
+        infoPanel.style.transition    = 'opacity 0.4s ease';
+        infoPanel.style.opacity       = '1';
+        infoPanel.style.pointerEvents = 'none';
+    }, 320);
+
+    /* Panneau descriptif — desktop (côté) + mobile (bottom sheet) */
+    document.getElementById('detail-title').textContent = info.title;
+    document.getElementById('detail-sub').textContent   = info.sub;
+    document.getElementById('detail-text').textContent  = info.text;
+    document.getElementById('detail-panel').classList.add('on');
+    document.body.classList.add('detail-open');
+    zoomToAnnotation(pos);
+}
+
+function closeDetail() {
+    document.getElementById('detail-panel').classList.remove('on');
+    document.body.classList.remove('detail-open');
+
+    /* Restaure le panneau info général */
+    const infoPanel = document.getElementById('info-panel');
+    infoPanel.style.opacity    = '0';
+    infoPanel.style.pointerEvents = 'none';
+    /* Réaffiche le bouton retour et les autres boutons */
+    const backBtn = document.getElementById('back-btn');
+    if (backBtn) { backBtn.classList.add('on'); backBtn.style.opacity = '1'; backBtn.style.pointerEvents = 'auto'; }
+    const arBtn = document.getElementById('premium-ar-btn');
+    const sketchBtn = document.getElementById('sketch-btn');
+    const adhanBtn = document.getElementById('adhan-btn');
+    if (arBtn) { arBtn.classList.add('on'); arBtn.style.opacity = '1'; arBtn.style.pointerEvents = 'auto'; }
+    if (sketchBtn) { sketchBtn.classList.add('on'); sketchBtn.style.opacity = '1'; sketchBtn.style.pointerEvents = 'auto'; }
+    if (adhanBtn) { adhanBtn.classList.add('on'); adhanBtn.style.opacity = '1'; adhanBtn.style.pointerEvents = 'auto'; }
+
+    setTimeout(() => {
+        /* Le titre reste en haut, le texte reste caché définitivement */
+        infoPanel.querySelector('.panel-title').textContent = 'La Tour Pyramidale de Gao';
+        infoPanel.style.opacity       = '1';
+        infoPanel.style.pointerEvents = 'none';
+    }, 320);
+    const ctrl = window._controls;
+    const cam  = window._camera;
+    if (!ctrl || !cam) return;
+
+    ctrl.autoRotate = false;
+
+    /* Retour à la position et cible sauvegardées avant le zoom */
+    const endPos = window._savedCamPos || new THREE.Vector3(cam.position.x, 95, cam.position.z);
+    const endTgt = window._savedCamTgt || window._modelCenter || new THREE.Vector3(52.82, 0, -26.69);
+    const startPos = cam.position.clone();
+    const startTgt = ctrl.target.clone();
+
+    const dur = 1400, t0 = performance.now();
+    function ease(t) { return t<0.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2; }
+    (function tick(now) {
+        const e = ease(Math.min((now-t0)/dur, 1));
+        cam.position.lerpVectors(startPos, endPos, e);
+        ctrl.target.lerpVectors(startTgt, endTgt, e);
+        ctrl.update();
+        if (e < 1) requestAnimationFrame(tick);
+        else {
+            ctrl.autoRotate      = true;
+            ctrl.autoRotateSpeed = 0.18;
+        }
+    })(t0);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ANNOTATIONS SIMPLES 3D → 2D
+═══════════════════════════════════════════════════════════ */
+const ANN_DATA = [
+    { mesh:'Tombeaux',          name:'La Tour Pyramidale', sub:'~17 m · banco', side:'right' },
+    { mesh:'La_base',           name:'Enceinte Principale', sub:'Cour intérieure', side:'left' },
+    { mesh:'Espace_des_femmes', name:'Espace des Femmes',  sub:'Salle de prière', side:'left' },
+    { mesh:'Espace_des_hommes', name:'Espace des Hommes',  sub:'Mosquée', side:'right' },
+    { mesh:'Branche',           name:'Les Piquets',         sub:'Bois de rônier', side:'right' },
+    { mesh:'Haute_parleur',     name:'Minaret',             sub:'Appel à la prière', side:'left' },
+    /* cimtière : position fixe depuis Blender (101.98, 62.18, 1.12) → Three.js */
+    { mesh:null, pos: [101.98, 1.12, -62.18],
+      name:'Cimetière', sub:'Askia Mohamed I', side:'left' },
+];
+
+/* ════════════════════════════════════════════════
+   AUDIO POSITIONNEL — Appel à la prière (Adhan)
+════════════════════════════════════════════════ */
+let _adhanCtx           = null;
+let _adhanSource        = null;
+let _adhanPanner        = null;
+let _adhanBuffer        = null;
+let _adhanDecodedBuffer = null;
+let _adhanPlaying       = false;
+let _adhanTowerTop      = null; /* initialisé dans setupAdhan() après chargement de Three.js */
+let _adhanDirection     = null; /* initialisé dans setupAdhan() quand THREE est disponible */
+
+/* URLs publiques CORS-friendly (essayées dans l'ordre) */
+const ADHAN_URLS = [
+    'https://upload.wikimedia.org/wikipedia/commons/transcoded/8/86/Azan.ogg/Azan.ogg.mp3',
+    'https://upload.wikimedia.org/wikipedia/commons/8/86/Azan.ogg'
+];
+
+function setupAdhan(scene, scene3d, camera) {
+    /* Position par défaut — sera affinée si le mesh Tombeaux est trouvé */
+    _adhanTowerTop = new THREE.Vector3(52.82, 60, -26.69);
+    _adhanDirection = new THREE.Vector3(1, 0, 0); /* valeur par défaut */
+    let womenPos = new THREE.Vector3();
+    let foundWomen = false;
+
+    scene3d.traverse(obj => {
+        if (obj.isMesh) {
+            const name = obj.name.trim();
+            if (name === 'Tombeaux') {
+                const box = new THREE.Box3().setFromObject(obj);
+                _adhanTowerTop.set(
+                    (box.min.x + box.max.x) / 2,
+                    box.max.y,
+                    (box.min.z + box.max.z) / 2
+                );
+            }
+            if (name === 'Espace_des_femmes') {
+                const box = new THREE.Box3().setFromObject(obj);
+                box.getCenter(womenPos);
+                foundWomen = true;
+            }
+        }
+    });
+
+    if (foundWomen) {
+        /* Calcul de la direction vers l'espace des femmes */
+        _adhanDirection.subVectors(womenPos, _adhanTowerTop).normalize();
+    } else {
+        /* Fallback si non trouvé : orientation vers l'intérieur (inverse de l'original) */
+        _adhanDirection.set(-1, -0.3, 0).normalize();
+    }
+
+    /* Pré-charger le buffer audio (sans créer l'AudioContext) */
+    function tryLoad(urls, idx) {
+        if (idx >= urls.length) {
+            console.warn('⚠️ Aucune source audio adhan disponible');
+            document.getElementById('adhan-btn').classList.add('on');
+            return;
+        }
+        fetch(urls[idx])
+            .then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+            .then(buf => {
+                /* Stocker le ArrayBuffer — décoder quand l'utilisateur clique */
+                _adhanBuffer = buf;
+                document.getElementById('adhan-btn').classList.add('on');
+                console.log('✅ Adhan pré-chargé depuis', urls[idx]);
+            })
+            .catch(() => tryLoad(urls, idx + 1));
+    }
+    tryLoad(ADHAN_URLS, 0);
+}
+
+function toggleAdhan() {
+    const btn = document.getElementById('adhan-btn');
+
+    if (_adhanPlaying) {
+        /* Stoppe le son */
+        if (_adhanSource) { try { _adhanSource.stop(); } catch(e){} _adhanSource = null; }
+        _adhanPlaying = false;
+        btn.innerHTML = '<i class="hud-btn-icon">♪</i> Adhan';
+        btn.classList.remove('playing');
+        return;
+    }
+
+    if (!_adhanBuffer) {
+        const old = btn.innerHTML;
+        btn.innerHTML = '<i class="hud-btn-icon">⏳</i> Chargement…';
+        setTimeout(() => { btn.innerHTML = old; }, 2000);
+        return;
+    }
+
+    /* Créer l'AudioContext au premier clic (exigence navigateur) */
+    if (!_adhanCtx) {
+        _adhanCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        _adhanPanner = _adhanCtx.createPanner();
+        _adhanPanner.panningModel   = 'HRTF';
+        _adhanPanner.distanceModel  = 'inverse';
+        _adhanPanner.refDistance    = 40;
+        _adhanPanner.maxDistance    = 600;
+        _adhanPanner.rolloffFactor  = 1.2;
+        _adhanPanner.coneInnerAngle = 200;
+        _adhanPanner.coneOuterAngle = 300;
+        _adhanPanner.coneOuterGain  = 0.15;
+        /* Position : sommet de la tour */
+        _adhanPanner.positionX.value = _adhanTowerTop.x;
+        _adhanPanner.positionY.value = _adhanTowerTop.y;
+        _adhanPanner.positionZ.value = _adhanTowerTop.z;
+        /* Orientation : dirigée vers l'espace des femmes */
+        _adhanPanner.orientationX.value = _adhanDirection.x;
+        _adhanPanner.orientationY.value = _adhanDirection.y;
+        _adhanPanner.orientationZ.value = _adhanDirection.z;
+        /* GainNode pour contrôler le volume (0.0 – 1.0) */
+        const gain = _adhanCtx.createGain();
+        gain.gain.value = 0.4;
+        _adhanPanner.connect(gain);
+        gain.connect(_adhanCtx.destination);
+        window._audioPanner = _adhanPanner;
+    }
+
+    if (_adhanCtx.state === 'suspended') _adhanCtx.resume();
+
+    /* Fonction pour décoder et jouer */
+    function playDecoded(decoded) {
+        _adhanDecodedBuffer = decoded;
+        _adhanSource = _adhanCtx.createBufferSource();
+        _adhanSource.buffer = decoded;
+        _adhanSource.loop   = true;
+        _adhanSource.connect(_adhanPanner);
+        _adhanSource.start(0);
+        _adhanPlaying = true;
+        btn.innerHTML = '<i class="hud-btn-icon">🔇</i> Couper le son';
+        btn.classList.add('playing');
+    }
+
+    if (_adhanDecodedBuffer) {
+        playDecoded(_adhanDecodedBuffer);
+    } else {
+        /* Décoder (compatible Safari avec Promise explicite) */
+        new Promise((resolve, reject) => {
+            _adhanCtx.decodeAudioData(_adhanBuffer.slice(0), resolve, reject);
+        }).then(decoded => {
+            playDecoded(decoded);
+        }).catch(e => {
+            console.error('Décodage audio:', e);
+            btn.innerHTML = '<i class="hud-btn-icon">⚠️</i> Erreur';
+            setTimeout(() => { btn.innerHTML = '<i class="hud-btn-icon">♪</i> Adhan'; }, 2000);
+        });
+    }
+}
+
+let _annotations = [];
+
+function buildAnnotations(scene3d, camera, renderer) {
+    const container = document.getElementById('annotations');
+    container.innerHTML = '';
+    _annotations = [];
+
+    ANN_DATA.forEach(({ mesh, pos, name, sub, side }) => {
+        /* Position : depuis le mesh OU position fixe (cimtière) */
+        let annPos;
+        if (mesh) {
+            let found = null;
+            scene3d.traverse(obj => { 
+                if (obj.name.trim() === mesh.trim()) found = obj; 
+            });
+            if (!found) { 
+                console.warn(`Annotation: Mesh "${mesh}" non trouvé dans le modèle.`); 
+                return; 
+            }
+            const box3 = new THREE.Box3().setFromObject(found);
+            annPos = new THREE.Vector3();
+            box3.getCenter(annPos);
+            /* On place le point d'ancrage au sommet de l'objet pour plus de visibilité */
+            annPos.y = box3.max.y;
+        } else {
+            annPos = new THREE.Vector3(pos[0], pos[1], pos[2]);
+        }
+
+        /* Clé pour ANN_INFO */
+        const infoKey = mesh ? mesh.trim() : '__cimetiere__';
+
+        const wrap = document.createElement('div');
+        wrap.className = 'ann';
+        if (side === 'left') wrap.classList.add('side-left');
+        wrap.addEventListener('click', () => openDetail(infoKey, annPos));
+
+        /* Dot */
+        const dot = document.createElement('div');
+        dot.className = 'ann-dot';
+        wrap.appendChild(dot);
+
+        /* SVG : trait vertical + tiret horizontal */
+        const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+        svg.className.baseVal = 'ann-svg';
+        const lv = document.createElementNS('http://www.w3.org/2000/svg','line');
+        lv.className.baseVal = 'ann-line-v';
+        lv.setAttribute('x1','0'); lv.setAttribute('y1','0');
+        const lh = document.createElementNS('http://www.w3.org/2000/svg','line');
+        lh.className.baseVal = 'ann-line-h';
+        svg.appendChild(lv); svg.appendChild(lh);
+        wrap.appendChild(svg);
+
+        /* Label */
+        const label = document.createElement('div');
+        label.className = 'ann-label';
+        label.innerHTML = `<span class="ann-label-name">${name}</span><span class="ann-label-sub">${sub}</span>`;
+        wrap.appendChild(label);
+
+        container.appendChild(wrap);
+        _annotations.push({ wrap, lv, lh, label, pos: annPos, side });
+    });
+
+    window._annotations = _annotations;
+    window._annCamera   = camera;
+    window._annRenderer = renderer;
+}
+
+function updateAnnotations() {
+    if (!window._annotations || !window._annCamera) return;
+    const cam = window._annCamera;
+    const rdr = window._annRenderer;
+    const W   = rdr.domElement.clientWidth;
+    const H   = rdr.domElement.clientHeight;
+
+    window._annotations.forEach(({ wrap, lv, lh, label, pos, side }) => {
+        const v  = pos.clone().project(cam);
+        const sx = ( v.x * 0.5 + 0.5) * W;
+        const sy = (-v.y * 0.5 + 0.5) * H;
+
+        wrap.style.left = sx + 'px';
+        wrap.style.top  = sy + 'px';
+
+        /* Trait vertical (montée) */
+        const vLen = 40;
+        lv.setAttribute('x2', '0');
+        lv.setAttribute('y2', -vLen);
+
+        /* Tiret horizontal */
+        const hLen = side === 'right' ? 50 : -50;
+        lh.setAttribute('x1', '0');   lh.setAttribute('y1', -vLen);
+        lh.setAttribute('x2', hLen);  lh.setAttribute('y2', -vLen);
+
+        /* Label au bout du tiret */
+        const pad = side === 'right' ? 6 : -6;
+        label.style.left = (hLen + pad) + 'px';
+        label.style.top  = (-vLen - 18) + 'px';
+        label.style.textAlign = side === 'right' ? 'left' : 'right';
+        if (side === 'left') label.style.transform = 'translateX(-100%)';
+        else label.style.transform = '';
+
+        /* Fade selon distance */
+        const dist  = cam.position.distanceTo(pos);
+        const front = v.z < 1.0;
+        const alpha = front && dist > 40 && dist < 420
+            ? Math.min(1, (dist - 40) / 70) : 0;
+        wrap.style.opacity = alpha;
+        wrap.style.pointerEvents = alpha > 0.1 ? 'auto' : 'none';
+        /* z-index dynamique : annotation la plus proche = au-dessus,
+           pour qu'elle reçoive le clic même si plusieurs labels se chevauchent */
+        wrap.style.zIndex = Math.max(0, Math.round(10000 - dist));
+    });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ILLUSTRATIONS 3D — plans canvas dans la scène
+═══════════════════════════════════════════════════════════ */
+const G = 'rgba(255,255,255,';   /* blanc */
+
+function cvTex(w, h, drawFn) {
+    const cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    const ctx = cv.getContext('2d');
+    ctx.clearRect(0, 0, w, h);
+    drawFn(ctx, w, h);
+    const t = new THREE.CanvasTexture(cv);
+    t.premultiplyAlpha = true;
+    return t;
+}
+
+function illusPlane(scene, tex, pw, ph, x, y, z, ry = 0) {
+    const mat = new THREE.MeshBasicMaterial({
+        map: tex, transparent: true, alphaTest: 0.02,
+        side: THREE.DoubleSide, depthWrite: false, opacity: 0
+    });
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(pw, ph), mat);
+    mesh.position.set(x, y, z);
+    mesh.rotation.y = ry;
+    scene.add(mesh);
+    return mesh;
+}
+
+
+/* ─── Soleil ─── */
+function drawSun(ctx, w, h) {
+    const cx=w/2, cy=h/2, r=w*.2;
+    ctx.strokeStyle = G + '.55)'; ctx.lineWidth=1.8; ctx.lineCap='round';
+    ctx.setLineDash([5,4]);
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
+    ctx.setLineDash([]);
+    for(let i=0;i<12;i++){
+        const a=(i/12)*Math.PI*2;
+        ctx.beginPath();
+        ctx.moveTo(cx+Math.cos(a)*r*1.35, cy+Math.sin(a)*r*1.35);
+        ctx.lineTo(cx+Math.cos(a)*r*1.85, cy+Math.sin(a)*r*1.85);
+        ctx.stroke();
+    }
+}
+
+/* ─── Lignes de sable / vent ─── */
+function drawWind(ctx, w, h) {
+    ctx.strokeStyle = G + '.3)'; ctx.lineWidth=1.2; ctx.lineCap='round';
+    [.2,.42,.64,.82].forEach((yf,i)=>{
+        const len = w*(.45+i*.12);
+        ctx.beginPath();
+        ctx.moveTo(0, h*yf);
+        ctx.bezierCurveTo(len*.3,h*yf-h*.06, len*.7,h*yf+h*.06, len,h*yf);
+        ctx.stroke();
+    });
+}
+
+/* ─── Flèche avec note ─── */
+function drawNote(ctx, w, h, line1, line2) {
+    ctx.strokeStyle = G + '1)'; ctx.lineWidth=2.5; ctx.lineCap='round';
+    /* trait courbé */
+    ctx.beginPath();
+    ctx.moveTo(w*.05, h*.45);
+    ctx.bezierCurveTo(w*.3,h*.38, w*.65,h*.58, w*.9,h*.82);
+    ctx.stroke();
+    /* pointe */
+    const ex=w*.9, ey=h*.82;
+    ctx.beginPath(); ctx.moveTo(ex,ey); ctx.lineTo(ex-16,ey-5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ex,ey); ctx.lineTo(ex-5,ey-16); ctx.stroke();
+    /* texte */
+    ctx.fillStyle = G + '1)'; ctx.font=`bold ${w*.18}px 'Caveat',cursive`;
+    ctx.fillText(line1, w*.04, h*.28);
+    if(line2){ ctx.font=`${w*.13}px 'Caveat',cursive`; ctx.fillStyle=G+'.7)'; ctx.fillText(line2,w*.04,h*.46); }
+}
+
+/* ─── Rose des vents ─── */
+function drawCompass(ctx, w, h) {
+    const cx=w/2, cy=h/2;
+    ctx.strokeStyle = G + '.5)'; ctx.lineWidth=1.4; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(cx,cy-h*.42); ctx.lineTo(cx,cy+h*.42); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx-w*.42,cy); ctx.lineTo(cx+w*.42,cy); ctx.stroke();
+    /* nord plein */
+    ctx.fillStyle=G+'.6)';
+    ctx.beginPath(); ctx.moveTo(cx,cy-h*.42); ctx.lineTo(cx-w*.06,cy); ctx.lineTo(cx+w*.06,cy); ctx.closePath(); ctx.fill();
+    /* N */
+    ctx.font=`bold ${w*.22}px Inter,sans-serif`; ctx.fillStyle=G+'.75)'; ctx.textAlign='center';
+    ctx.fillText('N', cx, cy-h*.5);
+}
+
+function addIllustrations3D(scene, scene3d) {
+    const cx=52.82, cz=-26.69;
+    const meshes = [];
+
+    /* === SOLEIL === */
+    meshes.push(illusPlane(scene, cvTex(256,256,drawSun), 38,38, cx+110,95,cz-90));
+
+    /* === NOTE : Tour 17m — pointe sur la base de la tour === */
+    {
+        /* Taille responsive */
+        const isMobile = window.innerWidth < 768;
+        const pw = isMobile ? 32 : 38;
+        const ph = isMobile ? 16 : 19;
+
+        /* Position réelle du mesh Tombeaux */
+        let towerBase = new THREE.Vector3(cx, 2, cz);
+        if (scene3d) {
+            scene3d.traverse(obj => {
+                if (obj.isMesh && obj.name.trim() === 'Tombeaux') {
+                    const box = new THREE.Box3().setFromObject(obj);
+                    towerBase.set(
+                        (box.min.x + box.max.x) / 2,
+                        box.min.y + 1,
+                        (box.min.z + box.max.z) / 2
+                    );
+                }
+            });
+        }
+
+        /* La pointe de la flèche est au coin bas-droite du canvas :
+           en local plan → (+0.4*pw, -0.32*ph, 0)
+           On calcule le centre du plan pour que ce point coïncide avec towerBase */
+        const ry = 0;
+        const tipLX =  0.4 * pw;
+        const tipLY = -0.32 * ph;
+        const px = towerBase.x - tipLX * Math.cos(ry);
+        const py = towerBase.y - tipLY + 18;
+        const pz = towerBase.z - tipLX * Math.sin(ry);
+
+        meshes.push(illusPlane(scene,
+            cvTex(512,256,(c,w,h)=>drawNote(c,w,h,'Tour · 17 m','~1495 · Askia I')),
+            pw, ph, px, py, pz, ry));
+    }
+
+    window._illusMeshes = meshes;
+}
+
+function fadeInIllustrations() {
+    if (!window._illusMeshes) return;
+    const start = performance.now();
+    (function tick(now) {
+        const t = Math.min((now - start) / 2000, 1);
+        window._illusOpacity = t;
+        window._illusMeshes.forEach(m => { m.material.opacity = t; });
+        if (t < 1) requestAnimationFrame(tick);
+    })(start);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DÉMARRAGE — intro → fly-in → HUD
+═══════════════════════════════════════════════════════════ */
+function startExperience() {
+    const overlay = document.getElementById('intro-overlay');
+    overlay.classList.add('out');
+    setTimeout(() => { overlay.style.display = 'none'; }, 1700);
+    document.getElementById('loader').classList.add('on');
+    document.getElementById('c').classList.add('visible');
+
+    /* Timeout 45s — affiche erreur si le modèle ne charge pas */
+    const timeout = setTimeout(() => {
+        clearInterval(wait);
+        showLoaderError('Délai dépassé — connexion lente ou modèle inaccessible');
+    }, 45000);
+
+    /* Attend que le modèle soit chargé */
+    const wait = setInterval(() => {
+        if (!window._modelLoaded) return;
+        clearInterval(wait);
+        clearTimeout(timeout);
+        document.getElementById('loader').classList.remove('on');
+        flyIn();
+    }, 100);
+}
+
+function flyIn() {
+    const cam  = window._camera;
+    const ctrl = window._controls;
+    if (!cam || !ctrl) return;
+
+    /* Centre = origine de la Carte_Satellite dans Blender → Three.js */
+    const c = window._modelCenter || new THREE.Vector3(52.82, 0, -26.69);
+
+    /* Position de départ : vue haute centrée sur le modèle */
+    cam.position.set(c.x, 280, c.z + 280);
+    ctrl.target.copy(c);
+    ctrl.autoRotate = false;
+    ctrl.update();
+
+    /* Arrive en vue rapprochée */
+    const startPos = cam.position.clone();
+    const endPos   = new THREE.Vector3(c.x, 95, c.z + 115);
+    const startTgt = ctrl.target.clone();
+    const endTgt   = c.clone();
+    const duration = 4000;
+    const start    = performance.now();
+
+    function ease(t) { return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2; }
+
+    (function tick(now) {
+        const t = Math.min((now - start) / duration, 1);
+        const e = ease(t);
+        cam.position.lerpVectors(startPos, endPos, e);
+        ctrl.target.lerpVectors(startTgt, endTgt, e);
+        ctrl.update();
+        if (t < 1) requestAnimationFrame(tick);
+        else {
+            ctrl.autoRotate = true; /* reprend l'auto-rotation après le fly-in */
+            revealHUD();
+        }
+    })(start);
+}
+
+function revealHUD() {
+    fadeInIllustrations();
+    document.querySelectorAll('.hud-corner').forEach(el => el.classList.add('on'));
+    document.getElementById('hud-data').classList.add('on');
+    document.getElementById('info-panel').classList.add('on');
+    document.getElementById('back-btn').classList.add('on');
+    document.getElementById('toggle-bar').classList.add('on');
+    document.getElementById('sketch-btn').classList.add('on');
+    document.getElementById('premium-ar-btn').style.opacity = '1';
+    document.getElementById('premium-ar-btn').classList.add('on');
+    initCustomSlider();
+}
+
+/* ── Ouvrir AR ── */
+function openAR() {
+    const viewer = document.getElementById('ar-viewer');
+    const container = document.getElementById('ar-container');
+    
+    /* Détection spécifique pour les casques VR/AR autonomes (comme le Meta Quest) */
+    const isHeadset = /VR|Quest|Oculus/i.test(navigator.userAgent);
+    
+    /* Vérification mobile ou casque (l'AR nécessite un appareil avec caméra spatiale) */
+    if (!IS_MOBILE && !isHeadset) {
+        showArModal("Expérience Spatiale", "La Réalité Augmentée est optimisée pour les smartphones et les casques VR/AR. Veuillez ouvrir ce lien sur un appareil compatible pour placer le tombeau dans votre environnement.");
+        return;
+    }
+
+    if (viewer && typeof viewer.activateAR === 'function') {
+        /* Pour WebXR (Android/Quest), le conteneur doit être visible */
+        if (container) {
+            container.style.width = '100%';
+            container.style.height = '100%';
+            container.style.zIndex = '1000';
+            container.style.pointerEvents = 'all';
+        }
+
+        viewer.activateAR();
+
+        viewer.addEventListener('ar-status', (e) => console.log('[AR status]', e.detail.status));
+
+        /* On détecte quand l'utilisateur quitte le mode AR */
+        const onARStatus = (event) => {
+            if (event.detail.status === 'not-presenting') {
+                if (container) {
+                    container.style.width = '1px';
+                    container.style.height = '1px';
+                    container.style.zIndex = '-1';
+                    container.style.pointerEvents = 'none';
+                }
+                viewer.removeEventListener('ar-status', onARStatus);
+            }
+        };
+        viewer.addEventListener('ar-status', onARStatus);
+    } else {
+        showArModal("AR non supportée", "Votre appareil ou votre navigateur ne semble pas supporter la Réalité Augmentée. Assurez-vous d'utiliser un smartphone récent avec un navigateur à jour.");
+    }
+}
+
+function showArModal(title, text) {
+    document.getElementById('ar-modal-title').textContent = title;
+    document.getElementById('ar-modal-text').textContent = text;
+    document.getElementById('ar-modal').classList.add('on');
+}
+
+function closeArModal() {
+    document.getElementById('ar-modal').classList.remove('on');
+}
+</script>
+</body>
+</html>

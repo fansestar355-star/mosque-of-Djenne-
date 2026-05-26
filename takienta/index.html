@@ -1,0 +1,2085 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Expérience Koutammakou - Togo</title>
+    <!-- GSAP for animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400&family=Inter:wght@300;400;500;700&display=swap">
+    <style>
+        body {
+            margin: 0;
+            background: #050505;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+        }
+
+        #ui-top {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            width: 100%;
+            z-index: 10;
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+        }
+
+        #ui-bottom {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 10;
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #ui-top.fade,
+        #ui-bottom.fade {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.55em;
+            margin: 0 0 6px 0;
+            color: #f9d58b;
+            white-space: nowrap;
+            text-shadow: 0 0 28px rgba(249, 213, 139, 0.45), 0 2px 8px rgba(0,0,0,0.7);
+        }
+
+        #ui-top .subtitle {
+            font-size: 0.72rem;
+            font-weight: 300;
+            letter-spacing: 0.22em;
+            color: rgba(249, 213, 139, 0.6);
+            text-transform: uppercase;
+            margin: 0;
+        }
+
+        button {
+            padding: 14px 44px;
+            background: rgba(85, 65, 93, 0.75);
+            border: 1.5px solid rgba(249, 213, 139, 0.8);
+            color: #f9d58b;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            font-size: 0.75rem;
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%);
+            backdrop-filter: blur(14px);
+            box-shadow: 0 0 20px rgba(249, 213, 139, 0.1), inset 0 1px 0 rgba(255,255,255,0.08);
+        }
+
+        button:hover {
+            background: #f9d58b;
+            color: #55415d;
+            letter-spacing: 6px;
+            transform: scale(1.04);
+            box-shadow: 0 0 30px rgba(249, 213, 139, 0.35);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        /* Bouton AR — primaire, doré plein */
+        #ar-btn {
+            display: none;
+            background: #f9d58b;
+            color: #55415d;
+            border-color: #f9d58b;
+            gap: 8px;
+        }
+        #ar-btn::before {
+            content: '';
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2355415d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 3H3v2'/%3E%3Cpath d='M19 3h2v2'/%3E%3Cpath d='M5 21H3v-2'/%3E%3Cpath d='M19 21h2v-2'/%3E%3Crect x='7' y='7' width='10' height='10' rx='1'/%3E%3C/svg%3E") center/contain no-repeat;
+            vertical-align: middle;
+            margin-right: 4px;
+        }
+        #ar-btn:hover {
+            background: #fff8e7;
+            color: #55415d;
+            border-color: #fff8e7;
+            box-shadow: 0 0 30px rgba(249, 213, 139, 0.5);
+        }
+
+        /* Bouton retour — secondaire discret */
+        #back-btn {
+            display: none;
+            background: transparent;
+            border-color: rgba(249, 213, 139, 0.35);
+            color: rgba(249, 213, 139, 0.6);
+            font-size: 0.65rem;
+            padding: 10px 28px;
+            letter-spacing: 3px;
+            margin-top: 10px;
+        }
+        #back-btn:hover {
+            background: transparent;
+            border-color: rgba(249, 213, 139, 0.7);
+            color: #f9d58b;
+            letter-spacing: 4px;
+            box-shadow: none;
+        }
+
+        /* Message AR non supporté */
+        #ar-unsupported {
+            display: none;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 1.2px;
+            color: rgba(249, 213, 139, 0.7);
+            text-transform: uppercase;
+            text-align: center;
+            padding: 8px 14px;
+            border: 1px solid rgba(249, 213, 139, 0.25);
+            border-radius: 6px;
+            background: rgba(0,0,0,0.3);
+        }
+
+        #landscape-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+            display: none;
+            opacity: 0;
+            transition: opacity 1.5s ease;
+        }
+
+        #portal-vortex {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background:
+                radial-gradient(ellipse 80% 60% at 50% 35%, rgba(85, 65, 93, 0.55) 0%, transparent 70%),
+                radial-gradient(ellipse at center, #0d0810 0%, #050505 100%);
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease;
+        }
+
+        #portal-vortex.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .portal-dna {
+            width: 60px;
+            height: 112px;
+            position: relative;
+            margin-bottom: 40px;
+        }
+
+        .portal-dna-dot {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #f9d58b;
+            border-radius: 50%;
+            left: 26px;
+            animation: portalDna 2s ease-in-out infinite;
+            box-shadow: 0 0 10px rgba(249, 213, 139, 0.55);
+        }
+
+        @keyframes portalDna {
+            0%, 100% { transform: translateX(-22px) scale(0.55); opacity: 0.25; background: #55415d; box-shadow: 0 0 6px rgba(85,65,93,0.6); }
+            50%       { transform: translateX(22px)  scale(1);    opacity: 1;    background: #f9d58b; box-shadow: 0 0 12px rgba(249,213,139,0.6); }
+        }
+
+        .portal-divider {
+            width: 60px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(85, 65, 93, 0.8), rgba(249, 213, 139, 0.5), rgba(85, 65, 93, 0.8), transparent);
+            margin-bottom: 28px;
+        }
+
+        .portal-boot-text {
+            font-family: 'IBM Plex Mono', 'Courier New', monospace;
+            font-size: 13px;
+            color: rgba(249, 213, 139, 0.75);
+            letter-spacing: 2px;
+            text-align: center;
+            line-height: 1.9;
+        }
+
+        .portal-boot-text .portal-finale {
+            color: #f9d58b;
+            text-shadow: 0 0 18px rgba(249, 213, 139, 0.55);
+            opacity: 1;
+            font-size: 16px;
+            letter-spacing: 3px;
+        }
+
+        /* Indicateur de chargement */
+        #loading-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: rgba(249, 213, 139, 0.5);
+            letter-spacing: 1px;
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        #loading-indicator.visible { opacity: 1; }
+
+        /* Hint de navigation */
+        #nav-hint {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            color: rgba(249, 213, 139, 0.35);
+            letter-spacing: 1px;
+            z-index: 50;
+            opacity: 0;
+            transition: opacity 1.5s ease;
+            pointer-events: none;
+        }
+        #nav-hint.visible { opacity: 1; }
+
+        canvas {
+            transition: filter 1.5s ease, opacity 1.5s ease;
+        }
+
+        .blur-effect {
+            filter: blur(10px);
+        }
+
+        /* --- Esthétique Annotation Premium (Style Callout UI) --- */
+
+        /* =====================================================
+           MARQUEURS ETHNOGRAPHIQUES
+           Losange statique · index doré · titre · divider · catégorie
+           Révélation en cascade à l'entrée dans le paysage
+           ===================================================== */
+
+        /* Révélation séquentielle au chargement */
+        @keyframes annotationReveal {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0);    }
+        }
+
+        /* Point simple sur le modèle — marqueur circulaire, statique */
+        .annotation-dot {
+            width: 7px;
+            height: 7px;
+            border: 1.5px solid rgba(255, 255, 255, 0.85);
+            background: rgba(255, 255, 255, 0.35);
+            border-radius: 50%;
+            pointer-events: none;
+            flex-shrink: 0;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        .annotation-dot.visible {
+            opacity: 1;
+        }
+
+        /* Wrapper : caché par défaut, révélé via JS */
+        .annotation-wrapper {
+            pointer-events: none;
+            opacity: 0;
+        }
+        .annotation-wrapper.visible {
+            pointer-events: none;
+            animation: annotationReveal 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        /* Bloc texte cliquable — inactif tant que le wrapper n'est pas visible */
+        .annotation-card {
+            pointer-events: none;
+            cursor: pointer;
+        }
+        .annotation-wrapper.visible .annotation-card {
+            pointer-events: auto;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            white-space: nowrap;
+            user-select: none;
+        }
+
+        /* Numéro d'index (01, 02…) */
+        .annotation-index {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            font-weight: 400;
+            letter-spacing: 0.15em;
+            color: #f9d58b;
+            text-shadow: 0 0 12px rgba(249, 213, 139, 0.4);
+            margin-bottom: 4px;
+            transition: text-shadow 0.25s ease;
+        }
+        .annotation-card:hover .annotation-index {
+            text-shadow: 0 0 18px rgba(249, 213, 139, 0.8);
+        }
+
+        /* Titre */
+        .annotation-title {
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 400;
+            letter-spacing: 0.03em;
+            color: rgba(255, 255, 255, 0.92);
+            text-shadow: 0 1px 12px rgba(0,0,0,0.99);
+            line-height: 1;
+            white-space: nowrap;
+            transition: color 0.25s ease;
+        }
+        .annotation-card:hover .annotation-title {
+            color: #f9d58b;
+        }
+
+        /* Séparateur avec shimmer doré en boucle */
+        @keyframes dividerScan {
+            0%   { background-position: -220% 0; }
+            100% { background-position: 220% 0;  }
+        }
+
+        .annotation-divider {
+            height: 1px;
+            margin: 6px 0 5px;
+            min-width: 90px;
+            width: 100%;
+            background: linear-gradient(
+                90deg,
+                rgba(255,255,255,0.28) 0%,
+                rgba(255,255,255,0.28) 35%,
+                rgba(249,213,139,0.95) 50%,
+                rgba(255,255,255,0.28) 65%,
+                rgba(255,255,255,0.28) 100%
+            );
+            background-size: 220% 100%;
+            animation: dividerScan 2.8s ease-in-out infinite;
+        }
+        .annotation-card:hover .annotation-divider {
+            background: rgba(249, 213, 139, 0.75);
+            animation: none;
+        }
+
+        /* Catégorie */
+        .annotation-subtitle {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 8.5px;
+            font-weight: 300;
+            letter-spacing: 0.12em;
+            color: rgba(255, 255, 255, 0.38);
+            text-shadow: 0 1px 8px rgba(0,0,0,0.99);
+            text-transform: uppercase;
+            white-space: nowrap;
+            transition: color 0.25s ease;
+        }
+        .annotation-card:hover .annotation-subtitle {
+            color: rgba(249, 213, 139, 0.55);
+        }
+
+        /* CTA pulsant sous le sous-titre */
+        @keyframes ctaPulse {
+            0%, 100% { opacity: 0.28; letter-spacing: 0.18em; }
+            50%       { opacity: 0.80; letter-spacing: 0.22em; }
+        }
+
+        .annotation-cta {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 7.5px;
+            font-weight: 400;
+            color: #f9d58b;
+            text-transform: uppercase;
+            white-space: nowrap;
+            margin-top: 7px;
+            animation: ctaPulse 2.2s ease-in-out infinite;
+            text-shadow: 0 0 10px rgba(249,213,139,0.35);
+        }
+        .annotation-card:hover .annotation-cta {
+            animation: none;
+            opacity: 1;
+            letter-spacing: 0.28em;
+            text-shadow: 0 0 16px rgba(249,213,139,0.7);
+        }
+
+        /* Panneau d'information */
+        #info-card {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            width: 310px;
+            background: rgba(30, 18, 38, 0.88);
+            border: 1px solid rgba(249, 213, 139, 0.18);
+            border-left: 2px solid #f9d58b;
+            padding: 22px 24px 18px;
+            color: #fff;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(-20px);
+            transition: all 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+            backdrop-filter: blur(24px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(85,65,93,0.4);
+        }
+
+        #info-card.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(0);
+        }
+
+        #info-card .card-tag {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 2.5px;
+            color: rgba(249, 213, 139, 0.5);
+            text-transform: uppercase;
+            margin: 0 0 10px 0;
+        }
+
+        #info-card h3 {
+            color: #f9d58b;
+            margin: 0 0 14px 0;
+            font-size: 1.05rem;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(249, 213, 139, 0.2);
+        }
+
+        #info-card p {
+            font-size: 0.84rem;
+            line-height: 1.7;
+            color: rgba(255, 255, 255, 0.75);
+            font-weight: 300;
+            margin: 0;
+        }
+
+        .close-info {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 18px;
+            color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 1;
+            transition: color 0.3s ease;
+            font-family: 'IBM Plex Mono', monospace;
+            border: none;
+            background: none;
+            padding: 0;
+            clip-path: none;
+            box-shadow: none;
+        }
+
+        .close-info:hover {
+            color: #f9d58b;
+            letter-spacing: 2px;
+            transform: none;
+            background: none;
+            box-shadow: none;
+        }
+
+        .close-info::before {
+            content: '←';
+            font-size: 0.9rem;
+        }
+
+        /* =====================================================
+           BOUTON DÉCOUVRIR — toggle annotations
+           ===================================================== */
+        #explore-btn {
+            display: none;
+            position: fixed;
+            bottom: 36px;
+            right: 36px;
+            z-index: 20;
+            background: rgba(14, 7, 22, 0.88);
+            border: 1.5px solid rgba(249, 213, 139, 0.7);
+            color: #f9d58b;
+            padding: 15px 26px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.62rem;
+            font-weight: 400;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            cursor: pointer;
+            clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%);
+            backdrop-filter: blur(18px);
+            align-items: center;
+            gap: 10px;
+            /* Animation principale : bounce + glow */
+            animation: exploreAttract 3s ease-in-out infinite;
+            box-shadow: 0 0 20px rgba(249,213,139,0.15);
+            transition: background 0.3s ease, border-color 0.3s ease;
+        }
+        #explore-btn.shown { display: flex; }
+
+        /* Ondulation sonar via ::before */
+        #explore-btn::before {
+            content: '';
+            position: absolute;
+            inset: -6px;
+            clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%);
+            border: 1.5px solid rgba(249,213,139,0.55);
+            animation: sonarRing 3s ease-out infinite;
+            pointer-events: none;
+        }
+        #explore-btn::after {
+            content: '';
+            position: absolute;
+            inset: -14px;
+            clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%);
+            border: 1px solid rgba(249,213,139,0.28);
+            animation: sonarRing 3s ease-out 0.6s infinite;
+            pointer-events: none;
+        }
+
+        @keyframes sonarRing {
+            0%   { opacity: 0.9; transform: scale(1); }
+            100% { opacity: 0;   transform: scale(1.25); }
+        }
+
+        @keyframes exploreAttract {
+            0%, 100% {
+                transform: translateY(0);
+                box-shadow: 0 0 20px rgba(249,213,139,0.12);
+                border-color: rgba(249,213,139,0.6);
+            }
+            45% {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 40px rgba(249,213,139,0.38), 0 0 80px rgba(249,213,139,0.1);
+                border-color: rgba(249,213,139,1);
+            }
+            55% {
+                transform: translateY(-5px);
+            }
+        }
+
+        .explore-icon {
+            font-size: 12px;
+            display: inline-block;
+            animation: spinDiamond 6s linear infinite;
+            transition: transform 0.5s ease;
+        }
+
+        @keyframes spinDiamond {
+            0%   { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #explore-btn:hover {
+            background: rgba(249,213,139,0.14);
+            border-color: #f9d58b;
+            letter-spacing: 4px;
+        }
+        #explore-btn:active { transform: scale(0.97) !important; }
+
+        #explore-btn.active {
+            background: rgba(249,213,139,0.08);
+            border-color: rgba(249,213,139,0.45);
+            animation: none;
+            box-shadow: 0 0 16px rgba(249,213,139,0.15);
+        }
+        #explore-btn.active::before,
+        #explore-btn.active::after { animation: none; opacity: 0; }
+        #explore-btn.active .explore-icon {
+            animation: none;
+            transform: rotate(45deg);
+        }
+
+        /* =====================================================
+           RESPONSIVE MOBILE
+           ===================================================== */
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1rem;
+                letter-spacing: 0.28em;
+                white-space: normal;
+                padding: 0 14px;
+                line-height: 1.3;
+            }
+            #ui-top .subtitle {
+                font-size: 0.6rem;
+                letter-spacing: 0.14em;
+                padding: 0 14px;
+            }
+            #ui-top {
+                top: max(18px, env(safe-area-inset-top, 18px));
+            }
+            #ui-bottom {
+                bottom: max(36px, calc(env(safe-area-inset-bottom, 0px) + 28px));
+                width: 88%;
+            }
+            button {
+                padding: 16px 28px;
+                font-size: 0.7rem;
+                letter-spacing: 2.5px;
+                min-height: 50px;
+                width: 100%;
+                box-sizing: border-box;
+            }
+            button:hover {
+                letter-spacing: 2.5px;
+            }
+            #back-btn {
+                padding: 13px 22px;
+                font-size: 0.6rem;
+            }
+            #info-card {
+                left: 12px;
+                right: 12px;
+                bottom: max(14px, env(safe-area-inset-bottom, 14px));
+                width: auto;
+                padding: 16px 16px 12px;
+                transform: translateY(20px);
+            }
+            #info-card.active {
+                transform: translateY(0);
+            }
+            #info-card h3 {
+                font-size: 0.9rem;
+            }
+            #info-card p {
+                font-size: 0.8rem;
+            }
+            .portal-boot-text {
+                font-size: 10px;
+                padding: 0 18px;
+                letter-spacing: 1.5px;
+            }
+            .portal-boot-text .portal-finale {
+                font-size: 14px;
+            }
+            .annotation-title {
+                font-size: 12px;
+            }
+            .annotation-index {
+                font-size: 8px;
+            }
+            .annotation-subtitle {
+                font-size: 7.5px;
+            }
+            .annotation-cta {
+                font-size: 7px;
+            }
+            #nav-hint {
+                bottom: max(14px, env(safe-area-inset-bottom, 14px));
+                right: 10px;
+                font-size: 9px;
+            }
+            #loading-indicator {
+                bottom: max(14px, env(safe-area-inset-bottom, 14px));
+                right: 10px;
+                font-size: 10px;
+            }
+            #explore-btn {
+                /* Circulaire, coin haut-droit — loin des boutons du bas */
+                top: max(80px, calc(env(safe-area-inset-top, 0px) + 72px));
+                bottom: auto;
+                right: 14px;
+                width: 58px;
+                height: 58px;
+                padding: 0;
+                clip-path: none;
+                border-radius: 50%;
+                flex-direction: column;
+                gap: 3px;
+                font-size: 0.42rem;
+                letter-spacing: 1.5px;
+                justify-content: center;
+            }
+            #explore-btn::before {
+                inset: -7px;
+                clip-path: none;
+                border-radius: 50%;
+            }
+            #explore-btn::after {
+                inset: -16px;
+                clip-path: none;
+                border-radius: 50%;
+            }
+            .explore-icon { font-size: 16px; }
+            #explore-btn:hover { letter-spacing: 1.5px; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="portal-vortex">
+        <div class="portal-dna" id="portal-dna"></div>
+        <div class="portal-divider"></div>
+        <div class="portal-boot-text" id="portal-boot-text"></div>
+    </div>
+    <div id="ui-top">
+        <h1 id="title">Afrique de l'Ouest</h1>
+        <p class="subtitle" id="subtitle">Koutammakou · Patrimoine mondial UNESCO</p>
+    </div>
+
+    <div id="ui-bottom">
+        <button id="next-btn">Explorer le Togo</button>
+        <button id="ar-btn">Voir en AR</button>
+        <button id="back-btn">← Retour à l'espace</button>
+        <div id="ar-unsupported">AR non disponible sur cet appareil</div>
+    </div>
+
+    <!-- Model Viewer — utilisé pour l'AR via slot natif -->
+    <model-viewer
+        id="ar-model"
+        src="La_Takienta.glb"
+        ar
+        ar-modes="webxr scene-viewer quick-look"
+        ar-scale="fixed"
+        scale="0.3 0.3 0.3"
+        style="position:fixed; width:1px; height:1px; opacity:0; pointer-events:none; bottom:0; right:0;"
+        shadow-intensity="1">
+        <button slot="ar-button" id="ar-slot-btn"
+            style="position:absolute;width:0;height:0;opacity:0;pointer-events:none;overflow:hidden;"></button>
+    </model-viewer>
+
+    <!-- Bouton toggle annotations -->
+    <button id="explore-btn">
+        <span class="explore-icon">◆</span>
+        <span class="explore-text">Découvrir</span>
+    </button>
+
+    <div id="landscape-container"></div>
+
+    <div id="loading-indicator">CHARGEMENT DU MODÈLE...</div>
+    <div id="nav-hint">CLIQUEZ SUR UNE ANNOTATION POUR EXPLORER</div>
+
+    <div id="info-card">
+        <p class="card-tag">Architecture Batammariba</p>
+        <h3 id="info-title">Objet</h3>
+        <p id="info-text"></p>
+        <div class="close-info" id="close-info-btn">Retour</div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+                "topojson-client": "https://esm.sh/topojson-client@3"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+        import { SimplexNoise } from 'three/addons/math/SimplexNoise.js';
+        import { Sky } from 'three/addons/objects/Sky.js';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+        import * as topojson from 'topojson-client';
+
+        // --- Globals ---
+        let scene, camera, renderer, globe, earthGroup, atmosphere, marker, controls;
+        let landscapeScene, landscapeCamera, landscapeRenderer, landscapeControls, labelRenderer, skyObj, sunVec;
+        let mainModel = null; // Stockage du modèle pour les annotations
+        let annotations = []; // Liste des labels actifs
+        let annotationsVisible = false;
+
+        function showAnnotations() {
+            annotations.forEach(ann => {
+                ann.line.visible = true;
+                ann.dotLabel.element.classList.add('visible');
+                const wrapper = ann.label.element.querySelector('.annotation-wrapper');
+                if (wrapper) {
+                    wrapper.classList.remove('visible');
+                    void wrapper.offsetWidth; // force reflow pour relancer l'animation
+                    wrapper.classList.add('visible');
+                }
+            });
+        }
+
+        function hideAnnotations() {
+            annotations.forEach(ann => {
+                ann.line.visible = false;
+                ann.dotLabel.element.classList.remove('visible');
+                const wrapper = ann.label.element.querySelector('.annotation-wrapper');
+                if (wrapper) wrapper.classList.remove('visible');
+            });
+        }
+
+        // Audio ambiance — démarre à la seconde 50
+        let _ambianceAudio = null;
+        let _ambianceFadeOut = null;
+
+        function playAmbianceAudio() {
+            if (_ambianceAudio) return;
+            const audio = new Audio('WhatsApp Video 2026-04-20 at 16.40.53.mp3');
+            audio.currentTime = 50;
+            audio.volume = 0;
+            audio.play().catch(() => {});
+            _ambianceAudio = audio;
+
+            let vol = 0;
+            const fadeIn = setInterval(() => {
+                vol = Math.min(vol + 0.04, 1);
+                audio.volume = vol;
+                if (vol >= 1) clearInterval(fadeIn);
+            }, 80);
+        }
+
+        function stopAmbianceAudio() {
+            if (!_ambianceAudio) return;
+            const audio = _ambianceAudio;
+            let vol = audio.volume;
+            clearInterval(_ambianceFadeOut);
+            _ambianceFadeOut = setInterval(() => {
+                vol = Math.max(vol - 0.05, 0);
+                audio.volume = vol;
+                if (vol <= 0) {
+                    clearInterval(_ambianceFadeOut);
+                    audio.pause();
+                    _ambianceAudio = null;
+                }
+            }, 80);
+        }
+
+        function toggleAnnotations() {
+            annotationsVisible = !annotationsVisible;
+            const btn = document.getElementById('explore-btn');
+            const txt = btn.querySelector('.explore-text');
+            if (annotationsVisible) {
+                showAnnotations();
+                btn.classList.add('active');
+                txt.textContent = 'Masquer';
+                playAmbianceAudio();
+            } else {
+                hideAnnotations();
+                btn.classList.remove('active');
+                txt.textContent = 'Découvrir';
+                stopAmbianceAudio();
+            }
+        }
+
+        const PART_DESCRIPTIONS = {
+            "LADDER_2": {
+                title: "Échelle Sacrée",
+                desc: "Taillée dans un tronc unique, cette échelle relie le rez-de-chaussée à la terrasse. Monter cette échelle, c'est passer du monde des animaux à celui des vivants et des ancêtres."
+            },
+            "ALTARS": {
+                title: "Autels des Ancêtres",
+                desc: "Ces autels à l'entrée sont le cœur spirituel de la takienta. Les Batammariba y font des offrandes aux esprits protecteurs. Les crânes des animaux sacrifiés sont placés au-dessus de l'entrée en signe de protection divine."
+            },
+            "ATTIC_1": {
+                title: "Grenier de l'Homme",
+                desc: "Ce grenier dans la tourelle cylindrique appartient au maître de maison. Il y stocke ses récoltes de mil et de sorgho, à l'abri de l'humidité et des rongeurs."
+            },
+            "ATTIC_2": {
+                title: "Grenier de la Femme",
+                desc: "Ce grenier appartient entièrement à la femme. Elle y conserve ses propres provisions pour nourrir la famille durant la saison sèche, en toute autonomie."
+            },
+            "WOOD": {
+                title: "Réceptacles des Esprits",
+                desc: "Ces bois à l'entrée sont des réceptacles sacrés où résident les esprits des ancêtres. Ils veillent sur les vivants et protègent la famille. Les toucher sans permission est un acte grave."
+            },
+            "DRIED_VEGETABLES": {
+                title: "Provisions Séchées",
+                desc: "Gombos, haricots et herbes sont séchés sur la terrasse au soleil du Sahel. Ils sont ensuite stockés dans la takienta pour assurer la survie alimentaire pendant les mois sans pluie."
+            },
+            "FORTRESSES": {
+                title: "Murs de Banco",
+                desc: "Ces murs en argile et paille, épais de 40 à 60 cm, protègent contre les ennemis et la chaleur. La takienta ne possède qu'une seule ouverture basse — une défense redoutable contre les intrus."
+            },
+            "THATCHED COVER_1": {
+                title: "Toit Conique en Chaume",
+                desc: "Ce toit conique en graminées sauvages est amovible : on le soulève pour verser les grains dans le grenier. Il assure ventilation naturelle et protection contre la pluie et les insectes."
+            }
+        };
+
+        let isTransitioning = false;
+        let step = 0;
+        let landscapeInitialized = false;
+        const simplex = new SimplexNoise();
+
+        // Subtitles par étape
+        const STEP_SUBTITLES = [
+            "Exploration · Afrique de l'Ouest",
+            "République du Togo · Afrique de l'Ouest",
+            "Koutammakou · Patrimoine mondial UNESCO 2004"
+        ];
+
+        const CONFIG = {
+            worldSize: 2500,
+            takientaCount: 12
+        };
+
+        const locations = [
+            { name: "Afrique de l'Ouest", lat: 12, lon: -2, distance: 350 },
+            { name: "Le Togo", lat: 10.1, lon: 0.82, distance: 150 },
+            { name: "La Takienta", lat: 10.1, lon: 0.82, distance: 10 }
+        ];
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x050505);
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.0;
+            document.body.appendChild(renderer.domElement);
+
+            earthGroup = new THREE.Group();
+            scene.add(earthGroup);
+
+            const texLoader = new THREE.TextureLoader();
+            const earthTexture = texLoader.load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg');
+            const earthNormal = texLoader.load('https://threejs.org/examples/textures/planets/earth_normal_2048.jpg');
+
+            const globeGeo = new THREE.SphereGeometry(100, 64, 64);
+            const globeMat = new THREE.MeshPhongMaterial({
+                map: earthTexture,
+                normalMap: earthNormal,
+                normalScale: new THREE.Vector2(0.5, 0.5),
+                shininess: 10,
+                color: 0xcccccc
+            });
+            globe = new THREE.Mesh(globeGeo, globeMat);
+            earthGroup.add(globe);
+
+            // Halo doré (côté jour) — couleur #f9d58b de l'expérience
+            const atmosGeo = new THREE.SphereGeometry(106, 64, 64);
+            const atmosMat = new THREE.ShaderMaterial({
+                vertexShader: `
+                    varying vec3 vNormal;
+                    void main() {
+                        vNormal = normalize(normalMatrix * normal);
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    varying vec3 vNormal;
+                    void main() {
+                        float intensity = pow(0.68 - dot(vNormal, vec3(0, 0, 1.0)), 5.0);
+                        intensity = clamp(intensity, 0.0, 1.0);
+                        gl_FragColor = vec4(0.976, 0.835, 0.545, 1.0) * intensity;
+                    }
+                `,
+                side: THREE.BackSide,
+                blending: THREE.AdditiveBlending,
+                transparent: true
+            });
+            atmosphere = new THREE.Mesh(atmosGeo, atmosMat);
+            earthGroup.add(atmosphere);
+
+            // Voile violet sur le côté nuit — couleur #55415d de l'expérience
+            const nightGeo = new THREE.SphereGeometry(101.5, 64, 64);
+            const nightMat = new THREE.ShaderMaterial({
+                vertexShader: `
+                    varying vec3 vNormal;
+                    void main() {
+                        vNormal = normalize(normalMatrix * normal);
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    varying vec3 vNormal;
+                    void main() {
+                        float d = dot(vNormal, vec3(0, 0, 1.0));
+                        float intensity = smoothstep(0.1, -0.4, d) * 0.55;
+                        gl_FragColor = vec4(0.333, 0.255, 0.365, intensity);
+                    }
+                `,
+                side: THREE.FrontSide,
+                blending: THREE.NormalBlending,
+                transparent: true,
+                depthWrite: false
+            });
+            earthGroup.add(new THREE.Mesh(nightGeo, nightMat));
+
+            const sunLight = new THREE.DirectionalLight(0xfff4e0, 1.5);
+            sunLight.position.set(350, 200, 100);
+            scene.add(sunLight);
+
+            const fillLight = new THREE.DirectionalLight(0x55415d, 0.18);
+            fillLight.position.set(-350, -100, -100);
+            scene.add(fillLight);
+
+            const ambientLight = new THREE.AmbientLight(0xfff8f0, 0.15);
+            scene.add(ambientLight);
+
+            createStars();
+
+            marker = createMarker(10.1, 0.82);
+            loadCountryBorders();
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.autoRotate = false;
+            // Interdit à l'utilisateur de faire tourner le globe manuellement
+            controls.enableRotate = false;
+            controls.enablePan = false;
+            controls.enableZoom = false;
+
+            const startPos = latLonToVector3(locations[0].lat, locations[0].lon, locations[0].distance);
+            camera.position.copy(startPos);
+            camera.lookAt(0, 0, 0);
+
+            window.addEventListener('resize', onWindowResize);
+            document.getElementById('next-btn').addEventListener('click', nextStep);
+
+            // Bouton retour depuis le paysage — animation de décollage
+            document.getElementById('back-btn').addEventListener('click', returnToSpace);
+
+            // Bouton toggle annotations
+            document.getElementById('explore-btn').addEventListener('click', toggleAnnotations);
+
+            // Bouton AR — déclenche via le slot natif de model-viewer
+            document.getElementById('ar-btn').addEventListener('click', () => {
+                const slotBtn = document.getElementById('ar-slot-btn');
+                const mv = document.getElementById('ar-model');
+                if (!slotBtn || !mv) return;
+
+                const doClick = () => {
+                    slotBtn.style.pointerEvents = 'auto';
+                    slotBtn.click();
+                    slotBtn.style.pointerEvents = 'none';
+                };
+
+                if (mv.loaded) {
+                    doClick();
+                } else {
+                    mv.addEventListener('load', doClick, { once: true });
+                }
+            });
+
+            // Fallback GitHub si le GLB local est absent pour l'AR
+            const mv = document.getElementById('ar-model');
+            mv.addEventListener('error', () => {
+                if (mv.src !== 'https://raw.githubusercontent.com/fansestar355-star/La-Takienta/main/La_Takienta.glb') {
+                    mv.src = 'https://raw.githubusercontent.com/fansestar355-star/La-Takienta/main/La_Takienta.glb';
+                }
+            }, { once: true });
+
+            animate();
+        }
+
+        function createStars() {
+            const geo = new THREE.BufferGeometry();
+            const positions = [];
+            const sizes = [];
+            for (let i = 0; i < 4500; i++) {
+                const r = 900 + Math.random() * 600;
+                const u = Math.random(), v = Math.random();
+                const theta = 2 * Math.PI * u;
+                const phi = Math.acos(2 * v - 1);
+                positions.push(
+                    r * Math.sin(phi) * Math.cos(theta),
+                    r * Math.sin(phi) * Math.sin(theta),
+                    r * Math.cos(phi)
+                );
+                sizes.push(Math.random() < 0.05 ? 2.5 : 1.0);
+            }
+            geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            geo.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
+            const mat = new THREE.PointsMaterial({
+                color: 0xfff4e0,
+                size: 1.2,
+                transparent: true,
+                opacity: 0.75,
+                sizeAttenuation: true
+            });
+            scene.add(new THREE.Points(geo, mat));
+        }
+
+        function createMarker(lat, lon) {
+            const group = new THREE.Group();
+            const pos = latLonToVector3(lat, lon, 101);
+            const mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const bar1 = new THREE.Mesh(new THREE.BoxGeometry(2, 0.3, 0.3), mat);
+            const bar2 = new THREE.Mesh(new THREE.BoxGeometry(2, 0.3, 0.3), mat);
+            bar1.rotation.z = Math.PI / 4;
+            bar2.rotation.z = -Math.PI / 4;
+            group.add(bar1, bar2);
+            group.position.copy(pos);
+            group.lookAt(0, 0, 0);
+            earthGroup.add(group);
+            return group;
+        }
+
+        async function loadCountryBorders() {
+            // depthTest:false : lignes toujours au-dessus du globe, jamais cachées
+            const borderMat = new THREE.LineBasicMaterial({
+                color: 0xf9d58b, transparent: false, opacity: 1.0,
+                depthTest: false, depthWrite: false
+            });
+            const togoMat = new THREE.LineBasicMaterial({
+                color: 0xffffff, transparent: true, opacity: 1.0,
+                depthTest: false, depthWrite: false
+            });
+
+            try {
+                // unpkg + world-atlas : CDN fiable, pas de rate-limit
+                const res = await fetch('https://unpkg.com/world-atlas@2/countries-50m.json');
+                const world = await res.json();
+                // Convertit topojson → geojson
+                const countries = topojson.feature(world, world.objects.countries);
+                // Code ISO numérique du Togo : 768
+                countries.features.forEach(feature => {
+                    const isTogo = String(feature.id) === '768';
+                    const mat    = isTogo ? togoMat : borderMat;
+                    const coords = feature.geometry.coordinates;
+                    const type   = feature.geometry.type;
+                    const drawAll = ring => drawRing(ring, mat, 101.2);
+                    if (type === 'Polygon')           coords.forEach(drawAll);
+                    else if (type === 'MultiPolygon') coords.forEach(p => p.forEach(drawAll));
+                });
+            } catch (e) { console.warn('Bordures non chargées :', e); }
+        }
+
+        function drawRing(ring, mat, radius = 100.5) {
+            const pts = ring.map(c => latLonToVector3(c[1], c[0], radius));
+            const geo = new THREE.BufferGeometry().setFromPoints(pts);
+            const line = new THREE.Line(geo, mat);
+            earthGroup.add(line);
+        }
+
+        function latLonToVector3(lat, lon, radius) {
+            const phi = (90 - lat) * (Math.PI / 180);
+            const theta = (lon + 180) * (Math.PI / 180);
+            return new THREE.Vector3(
+                -radius * Math.sin(phi) * Math.cos(theta),
+                radius * Math.cos(phi),
+                radius * Math.sin(phi) * Math.sin(theta)
+            );
+        }
+
+        function portalTypeText(el, text) {
+            return new Promise(resolve => {
+                if (!text) { resolve(); return; }
+                let i = 0;
+                const span = document.createElement('span');
+                el.appendChild(span);
+                const iv = setInterval(() => {
+                    span.textContent += text[i++];
+                    if (i >= text.length) { clearInterval(iv); resolve(); }
+                }, 22);
+            });
+        }
+
+        function playDjembeIntro() {
+            const audio = new Audio('djiembe.mp3');
+            audio.volume = 0;
+            audio.play().catch(() => {});
+
+            // Fade in
+            let vol = 0;
+            const fadeIn = setInterval(() => {
+                vol = Math.min(vol + 0.05, 1);
+                audio.volume = vol;
+                if (vol >= 1) clearInterval(fadeIn);
+            }, 80);
+
+            // Fade out à partir de 7s
+            setTimeout(() => {
+                const fadeOut = setInterval(() => {
+                    vol = Math.max(vol - 0.04, 0);
+                    audio.volume = vol;
+                    if (vol <= 0) { clearInterval(fadeOut); audio.pause(); }
+                }, 80);
+            }, 7000);
+        }
+
+        async function nextStep() {
+            if (isTransitioning) return;
+            isTransitioning = true;
+
+            // Tue tout tween GSAP en cours sur la caméra (évite les conflits avec runAnim)
+            gsap.killTweensOf(camera.position);
+            if (controls) controls.enabled = false;
+
+            const uiTop = document.getElementById('ui-top');
+            const uiBottom = document.getElementById('ui-bottom');
+            uiTop.classList.add('fade');
+            uiBottom.classList.add('fade');
+
+            setTimeout(() => {
+                step = (step + 1) % locations.length;
+                const target = locations[step];
+                document.getElementById('title').innerText = target.name;
+                document.getElementById('subtitle').innerText = STEP_SUBTITLES[step];
+
+                const worldPos = latLonToVector3(target.lat, target.lon, target.distance);
+                const lookAtPos = new THREE.Vector3(0, 0, 0);
+
+                function easeInOut(t) {
+                    return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
+                }
+
+                function runAnim(fromPos, toPos, fromLook, toLook, duration, onDone) {
+                    const t0 = performance.now();
+                    function tick() {
+                        const t = Math.min((performance.now() - t0) / duration, 1);
+                        const e = easeInOut(t);
+                        camera.position.lerpVectors(fromPos, toPos, e);
+                        camera.lookAt(new THREE.Vector3().lerpVectors(fromLook, toLook, e));
+                        if (t < 1) requestAnimationFrame(tick);
+                        else onDone();
+                    }
+                    tick();
+                }
+
+                function onTransitionComplete() {
+                    const vortex = document.getElementById('portal-vortex');
+                    const landscapeContainer = document.getElementById('landscape-container');
+                    const canvas = renderer.domElement;
+                    if (step === 2) {
+                        // Paysage visible — dissoudre l'écran de boot
+                        vortex.style.transition = 'opacity 1.5s ease-out';
+                        vortex.style.opacity = '0';
+                        vortex.style.pointerEvents = 'none';
+                    } else {
+                        // Retour au globe — remet l'atmosphère visible
+                        if (atmosphere) atmosphere.visible = true;
+                        landscapeContainer.style.display = 'none';
+                        landscapeContainer.style.opacity = '0';
+                        canvas.style.transition = 'opacity 1s ease-out';
+                        canvas.style.opacity = '1';
+                        canvas.classList.remove('blur-effect');
+                    }
+                    isTransitioning = false;
+                    uiTop.classList.remove('fade');
+                    uiBottom.classList.remove('fade');
+                    const nextBtn  = document.getElementById('next-btn');
+                    const arBtn    = document.getElementById('ar-btn');
+                    const backBtn  = document.getElementById('back-btn');
+                    if (step === 2) {
+                        // Paysage : cache le bouton principal, montre AR (ou message) + retour
+                        nextBtn.style.display  = 'none';
+                        backBtn.style.display  = 'inline-block';
+                        const mv = document.getElementById('ar-model');
+                        if (mv && mv.canActivateAR) {
+                            arBtn.style.display = 'inline-block';
+                            document.getElementById('ar-unsupported').style.display = 'none';
+                        } else {
+                            arBtn.style.display = 'none';
+                            document.getElementById('ar-unsupported').style.display = 'block';
+                        }
+                        // Affiche le bouton Découvrir
+                        document.getElementById('explore-btn').classList.add('shown');
+                    } else {
+                        // Globe : remet le bouton principal, cache Découvrir
+                        nextBtn.style.display  = 'inline-block';
+                        arBtn.style.display    = 'none';
+                        backBtn.style.display  = 'none';
+                        document.getElementById('ar-unsupported').style.display = 'none';
+                        nextBtn.innerText = step === 1 ? "Voir la Takienta" : "Explorer le Togo";
+                        // Cache le bouton Découvrir et reset les annotations
+                        const explBtn = document.getElementById('explore-btn');
+                        explBtn.classList.remove('shown', 'active');
+                        document.querySelector('.explore-text').textContent = 'Découvrir';
+                        annotationsVisible = false;
+                        hideAnnotations();
+                        stopAmbianceAudio();
+                    }
+                }
+
+                if (step === 2) {
+                    // Récupère la position monde de la croix Togo
+                    marker.getWorldPosition(lookAtPos);
+
+                    // Démarre le rythme djembé au moment du zoom sur le Togo
+                    playDjembeIntro();
+
+                    // Phase 1 : zoom serré sur le Togo (distance ~120, hors du globe)
+                    const closePos  = latLonToVector3(10.1, 0.82, 120);
+                    const cam0      = camera.position.clone();
+                    const look0     = controls.target.clone();
+
+                    runAnim(cam0, closePos, look0, lookAtPos, 2200, () => {
+
+
+                        // Courte pause — l'utilisateur voit le Togo en gros plan
+                        setTimeout(() => {
+
+                            // Cache l'atmosphère avant le zoom serré pour éviter le rendu de l'intérieur
+                            if (atmosphere) atmosphere.visible = false;
+                            initLandscape();
+
+                            // Phase 2 : snap instantané à la surface
+                            const finalPos = latLonToVector3(10.1, 0.82, 104);
+                            camera.position.copy(finalPos);
+                            camera.lookAt(lookAtPos);
+
+                            (async () => {
+                                const vortex = document.getElementById('portal-vortex');
+                                const canvas  = renderer.domElement;
+
+                                // Build DNA helix
+                                const dnaEl = document.getElementById('portal-dna');
+                                dnaEl.innerHTML = '';
+                                for (let i = 0; i < 8; i++) {
+                                    const dot = document.createElement('div');
+                                    dot.className = 'portal-dna-dot';
+                                    dot.style.top = (i * 14) + 'px';
+                                    dot.style.animationDelay = (i * 0.22) + 's';
+                                    dnaEl.appendChild(dot);
+                                }
+
+                                // Fade in overlay + fade out globe
+                                vortex.classList.add('active');
+                                canvas.style.transition = 'opacity 0.5s ease';
+                                canvas.style.opacity = '0';
+                                await new Promise(r => setTimeout(r, 600));
+
+                                // Typewriter boot sequence
+                                const bootEl = document.getElementById('portal-boot-text');
+                                bootEl.innerHTML = '';
+                                const lines = [
+                                    { text: '[ CONNEXION AU PORTAIL... ]',         finale: false },
+                                    { text: '[ MÉMOIRE BATAMMARIBA ACTIVE ]',       finale: false },
+                                    { text: '[ CHARGEMENT : KOUTAMMAKOU ]',         finale: false },
+                                    { text: '[ CONSCIENCE ANCESTRALE ÉVEILLÉE ]',   finale: false },
+                                    { text: '',                                      finale: false },
+                                    { text: 'Bienvenue.',                            finale: true  }
+                                ];
+                                for (const { text, finale } of lines) {
+                                    if (finale) {
+                                        const span = document.createElement('span');
+                                        span.className = 'portal-finale';
+                                        bootEl.appendChild(span);
+                                        await new Promise(resolve => {
+                                            let i = 0;
+                                            const iv = setInterval(() => {
+                                                span.textContent += text[i++];
+                                                if (i >= text.length) { clearInterval(iv); resolve(); }
+                                            }, 22);
+                                        });
+                                    } else {
+                                        await portalTypeText(bootEl, text);
+                                    }
+                                    bootEl.appendChild(document.createElement('br'));
+                                    await new Promise(r => setTimeout(r, 220));
+                                }
+
+                                            // Reveal landscape through fading overlay
+                                const lc = document.getElementById('landscape-container');
+                                lc.style.display = 'block';
+                                await new Promise(r => setTimeout(r, 300));
+                                lc.style.opacity = '1';
+                                await new Promise(r => setTimeout(r, 900));
+                                onTransitionComplete();
+                                // Affiche le hint de navigation après l'entrée
+                                setTimeout(() => {
+                                    document.getElementById('nav-hint').classList.add('visible');
+                                    setTimeout(() => document.getElementById('nav-hint').classList.remove('visible'), 4000);
+                                }, 1200);
+                            })();
+
+                        }, 700);
+                    });
+
+                } else {
+                    // Navigation normale (étapes 0 → 1 et retour)
+                    const cam0  = camera.position.clone();
+                    const look0 = new THREE.Vector3().copy(controls ? controls.target : new THREE.Vector3());
+                    runAnim(cam0, worldPos, look0, lookAtPos, 2500, onTransitionComplete);
+                }
+
+            }, 800);
+        }
+
+        function initLandscape() {
+            if (landscapeInitialized) return;
+            landscapeInitialized = true;
+            landscapeScene = new THREE.Scene();
+            landscapeCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 10000);
+            landscapeCamera.position.set(100, 80, 150);
+            landscapeCamera.lookAt(0, 0, 0);
+
+            landscapeRenderer = new THREE.WebGLRenderer({ antialias: true });
+            landscapeRenderer.setSize(window.innerWidth, window.innerHeight);
+            landscapeRenderer.shadowMap.enabled = true;
+            landscapeRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            landscapeRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+            landscapeRenderer.toneMappingExposure = 0.8;
+            document.getElementById('landscape-container').appendChild(landscapeRenderer.domElement);
+
+            // Initialisation du Label Renderer pour les annotations HTML
+            labelRenderer = new CSS2DRenderer();
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.domElement.style.position = 'absolute';
+            labelRenderer.domElement.style.top = '0px';
+            labelRenderer.domElement.style.pointerEvents = 'none'; // Très important
+            document.getElementById('landscape-container').appendChild(labelRenderer.domElement);
+
+            landscapeControls = new OrbitControls(landscapeCamera, landscapeRenderer.domElement);
+            landscapeControls.enableDamping = true;
+            landscapeControls.maxPolarAngle = Math.PI / 2.05;
+            landscapeControls.autoRotate = true;
+            landscapeControls.autoRotateSpeed = 0.2;
+            landscapeControls.minDistance = 50;
+            landscapeControls.maxDistance = 350;
+
+            const ambient = new THREE.AmbientLight(0xffffff, 1.2);
+            landscapeScene.add(ambient);
+
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.0);
+            hemiLight.position.set(0, 200, 0);
+            landscapeScene.add(hemiLight);
+
+            sunVec = new THREE.Vector3();
+            const sunLight = new THREE.DirectionalLight(0xfff4e0, 2.5);
+            sunLight.castShadow = true;
+            sunLight.shadow.mapSize.set(4096, 4096);
+            sunLight.shadow.camera.left = -1500;
+            sunLight.shadow.camera.right = 1500;
+            sunLight.shadow.camera.top = 1500;
+            sunLight.shadow.camera.bottom = -1500;
+            landscapeScene.add(sunLight);
+
+            skyObj = new Sky();
+            skyObj.scale.setScalar(450000);
+            landscapeScene.add(skyObj);
+
+            const skyUniforms = skyObj.material.uniforms;
+            skyUniforms['turbidity'].value = 10;
+            skyUniforms['rayleigh'].value = 3;
+            skyUniforms['mieCoefficient'].value = 0.005;
+            skyUniforms['mieDirectionalG'].value = 0.8;
+
+            const sunPhi = THREE.MathUtils.degToRad(86);
+            const sunTheta = THREE.MathUtils.degToRad(180);
+            sunVec.setFromSphericalCoords(1, sunPhi, sunTheta);
+            skyUniforms['sunPosition'].value.copy(sunVec);
+            sunLight.position.copy(sunVec).multiplyScalar(1000);
+
+            landscapeScene.fog = new THREE.Fog(0xd8d0c8, 150, 1800);
+
+            createTerrain();
+            createVegetation();
+            createTakientaHouses();
+            loadMainModel();
+        }
+
+        function createTerrain() {
+            const geo = new THREE.PlaneGeometry(2500, 2500, 128, 128);
+            geo.rotateX(-Math.PI / 2);
+            const pos = geo.attributes.position.array;
+            const colors = [];
+
+            const colorEarth = new THREE.Color(0x9d7b5f);
+            const colorGrass = new THREE.Color(0x5c7a42);
+
+            for (let i = 0; i < pos.length; i += 3) {
+                const x = pos[i], z = pos[i + 2];
+                pos[i + 1] = simplex.noise(x / 400, z / 400) * 4 + simplex.noise(x / 80, z / 80) * 1.5;
+
+                const patchNoise = simplex.noise(x / 300, z / 300) + simplex.noise(x / 100, z / 100) * 0.5;
+                let mixRatio = patchNoise > 0.2 ? 0.85 : 0.0;
+                if (Math.sqrt(x * x + z * z) < 200) mixRatio = 0.0;
+                const mixedColor = new THREE.Color().lerpColors(colorEarth, colorGrass, mixRatio);
+                colors.push(mixedColor.r, mixedColor.g, mixedColor.b);
+            }
+            geo.computeVertexNormals();
+            geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+            const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, metalness: 0.05 });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.receiveShadow = true;
+            landscapeScene.add(mesh);
+        }
+
+        function createVegetation() {
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x483225 });
+            const leafMat = new THREE.MeshStandardMaterial({ color: 0x1e361f });
+            for (let i = 0; i < 180; i++) {
+                const group = new THREE.Group();
+                const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.6, 7), trunkMat);
+                trunk.position.y = 3.5;
+                group.add(trunk);
+                for (let j = 0; j < 12; j++) {
+                    const leaf = new THREE.Mesh(new THREE.IcosahedronGeometry(Math.random() * 2 + 2, 0), leafMat);
+                    leaf.position.set((Math.random() - 0.5) * 4, 7 + Math.random() * 2, (Math.random() - 0.5) * 4);
+                    leaf.castShadow = true;
+                    group.add(leaf);
+                }
+                let x, z;
+                do {
+                    x = (Math.random() - 0.5) * 2200;
+                    z = (Math.random() - 0.5) * 2200;
+                } while (Math.sqrt(x * x + z * z) < 250);
+                const y = simplex.noise(x / 400, z / 400) * 4;
+                group.position.set(x, y, z);
+                group.scale.setScalar(1.5 + Math.random() * 2.5);
+                landscapeScene.add(group);
+            }
+
+            const bushMat = new THREE.MeshStandardMaterial({ color: 0x4a6b36 });
+            for (let k = 0; k < 400; k++) {
+                const bush = new THREE.Mesh(new THREE.IcosahedronGeometry(Math.random() * 1.5 + 0.8, 0), bushMat);
+                let bx, bz;
+                do {
+                    bx = (Math.random() - 0.5) * 2000;
+                    bz = (Math.random() - 0.5) * 2000;
+                } while (Math.sqrt(bx * bx + bz * bz) < 200);
+                const by = simplex.noise(bx / 400, bz / 400) * 4;
+                bush.position.set(bx, by, bz);
+                bush.castShadow = true;
+                bush.receiveShadow = true;
+                landscapeScene.add(bush);
+            }
+        }
+
+        function createTakientaHouses() {
+            const wallMat = new THREE.MeshStandardMaterial({ color: 0x8b6d5c });
+            const roofMat = new THREE.MeshStandardMaterial({ color: 0xb49a7a });
+            for (let c = 0; c < 8; c++) {
+                let clusterX, clusterZ;
+                do {
+                    clusterX = (Math.random() - 0.5) * 1500;
+                    clusterZ = (Math.random() - 0.5) * 1500;
+                } while (Math.sqrt(clusterX * clusterX + clusterZ * clusterZ) < 300);
+                const group = new THREE.Group();
+                for (let i = 0; i < 5; i++) {
+                    const house = new THREE.Group();
+                    const wall = new THREE.Mesh(new THREE.CylinderGeometry(2, 2.3, 6, 24), wallMat);
+                    const roof = new THREE.Mesh(new THREE.ConeGeometry(3.3, 5.5, 24), roofMat);
+                    roof.position.y = 5.8;
+                    house.add(wall, roof);
+                    house.position.set((Math.random() - 0.5) * 40, 2, (Math.random() - 0.5) * 40);
+                    house.scale.setScalar(1.5 + Math.random() * 1.5);
+                    house.traverse(n => { if (n.isMesh) n.castShadow = true; });
+                    group.add(house);
+                }
+                group.position.set(clusterX, 0, clusterZ);
+                landscapeScene.add(group);
+            }
+        }
+
+        function loadMainModel() {
+            const loader = new GLTFLoader();
+            const dracoLoader = new DRACOLoader();
+            dracoLoader.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
+            loader.setDRACOLoader(dracoLoader);
+
+            const loadingEl = document.getElementById('loading-indicator');
+            loadingEl.classList.add('visible');
+
+            const urls = [
+                'La_Takienta.glb',
+                'https://raw.githubusercontent.com/fansestar355-star/La-Takienta/main/La_Takienta.glb'
+            ];
+
+            function tryLoad(index) {
+                if (index >= urls.length) {
+                    loadingEl.classList.remove('visible');
+                    createProceduralTakienta();
+                    return;
+                }
+                loader.load(
+                    urls[index],
+                    (gltf) => {
+                        loadingEl.classList.remove('visible');
+                        const model = gltf.scene;
+                        model.scale.setScalar(10);
+                        const bbox = new THREE.Box3().setFromObject(model);
+                        const minY = bbox.min.y;
+                        model.position.set(0, -minY, 0);
+                        model.traverse(n => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
+                        landscapeScene.add(model);
+                        mainModel = model;
+
+                        setTimeout(() => {
+                            addAnnotation("LADDER_2", "Échelle Sacrée");
+                            addAnnotation("ALTARS", "Autels Koutammakou");
+                            addAnnotation("ATTIC_1", "Grenier Homme");
+                            addAnnotation("ATTIC_2", "Grenier Femme");
+                            addAnnotation("FORTRESSES", "Murs Défensifs");
+                            addAnnotation("THATCHED COVER_1", "Toit en Chaume");
+                            addAnnotation("WOOD", "Bois de Construction");
+                            addAnnotation("DRIED_VEGETABLES", "Légumes Séchés");
+                        }, 500);
+                    },
+                    null,
+                    () => tryLoad(index + 1)
+                );
+            }
+            tryLoad(0);
+        }
+
+        function createProceduralTakienta() {
+            const takienta = new THREE.Group();
+            const earthMat = new THREE.MeshStandardMaterial({ color: 0x8B6D4C, roughness: 1 });
+            const earthDarkMat = new THREE.MeshStandardMaterial({ color: 0x6B4F3A, roughness: 1 });
+            const thatchMat = new THREE.MeshStandardMaterial({ color: 0xA08050, roughness: 1 });
+            const thatchDarkMat = new THREE.MeshStandardMaterial({ color: 0x7A6030, roughness: 1 });
+            const doorMat = new THREE.MeshStandardMaterial({ color: 0x3A2A1A, roughness: 1 });
+
+            const mainTower = new THREE.Group();
+            const mainBody = new THREE.Mesh(new THREE.CylinderGeometry(4, 4.8, 18, 32), earthMat);
+            mainBody.position.y = 9;
+            mainTower.add(mainBody);
+            const upperFloor = new THREE.Mesh(new THREE.CylinderGeometry(4.5, 4, 2, 32), earthDarkMat);
+            upperFloor.position.y = 19;
+            mainTower.add(upperFloor);
+            const mainRoof = new THREE.Mesh(new THREE.ConeGeometry(6, 8, 32), thatchMat);
+            mainRoof.position.y = 24;
+            mainRoof.name = "THATCHED COVER_1";
+            mainTower.add(mainRoof);
+            const door = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 3.5), doorMat);
+            door.position.set(0, 2, 4.85);
+            mainTower.add(door);
+            takienta.add(mainTower);
+
+            const secondaryPositions = [
+                { x: 10, z: 0, height: 10, radius: 2.5, name: "ATTIC_1" },
+                { x: -10, z: 0, height: 11, radius: 2.3, name: "ATTIC_2" },
+                { x: 5, z: 9, height: 9, radius: 2.2, name: "ATTIC_3" },
+                { x: -5, z: 9, height: 10, radius: 2.4, name: "ATTIC_4" },
+                { x: 5, z: -9, height: 9.5, radius: 2.0, name: "ATTIC_5" },
+                { x: -5, z: -9, height: 10.5, radius: 2.1, name: "ATTIC_6" },
+            ];
+
+            secondaryPositions.forEach(pos => {
+                const tower = new THREE.Group();
+                tower.name = pos.name;
+                const body = new THREE.Mesh(new THREE.CylinderGeometry(pos.radius, pos.radius * 1.15, pos.height, 24), earthMat);
+                body.position.y = pos.height / 2;
+                tower.add(body);
+                const roof = new THREE.Mesh(new THREE.ConeGeometry(pos.radius + 1.2, 5, 24), thatchMat);
+                roof.position.y = pos.height + 2.5;
+                tower.add(roof);
+                tower.position.set(pos.x, 0, pos.z);
+                takienta.add(tower);
+            });
+
+            const ladderGroup = new THREE.Group();
+            ladderGroup.name = "LADDER_2";
+            takienta.add(ladderGroup);
+
+            takienta.scale.setScalar(2.5);
+            takienta.traverse(n => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
+            landscapeScene.add(takienta);
+            mainModel = takienta;
+
+            setTimeout(() => {
+                addAnnotation("LADDER_2", "Échelle Sacrée");
+                addAnnotation("ATTIC_1", "Grenier Homme");
+                addAnnotation("ATTIC_2", "Grenier Femme");
+                addAnnotation("FORTRESSES", "Murs Défensifs");
+                addAnnotation("THATCHED COVER_1", "Toit en Chaume");
+                addAnnotation("WOOD", "Bois de Construction");
+                addAnnotation("DRIED_VEGETABLES", "Légumes Séchés");
+            }, 500);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            if (landscapeRenderer) {
+                landscapeCamera.aspect = window.innerWidth / window.innerHeight;
+                landscapeCamera.updateProjectionMatrix();
+                landscapeRenderer.setSize(window.innerWidth, window.innerHeight);
+                if (labelRenderer) labelRenderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        }
+
+        /**
+         * MARQUEURS ETHNOGRAPHIQUES
+         *
+         * ◆  losange statique sur le modèle
+         * ─  trait fin vers le bloc texte
+         *    01   ← index doré
+         *    Titre
+         *    ─────
+         *    catégorie
+         *
+         * Révélation en cascade à l'entrée (animationReveal + délai)
+         */
+        const ANNOTATION_ORDER = [
+            "THATCHED COVER_1","ATTIC_1","LADDER_2",
+            "ATTIC_2","FORTRESSES","ALTARS","WOOD","DRIED_VEGETABLES"
+        ];
+
+        const ANNOTATION_SUBTITLE = {
+            "LADDER_2":         "Passage entre deux mondes",
+            "ALTARS":           "Temple des ancêtres · Spiritualité",
+            "ATTIC_1":          "Souveraineté masculine · Grenier",
+            "ATTIC_2":          "Souveraineté féminine · Grenier",
+            "FORTRESSES":       "Argile & paille · Architecture défensive",
+            "THATCHED COVER_1": "Graminées sauvages · Toiture amovible",
+            "WOOD":             "Bois rituels · Présence des ancêtres",
+            "DRIED_VEGETABLES": "Savoir-faire ancestral · Conservation"
+        };
+
+        const SPATIAL_MAP = {
+            "THATCHED COVER_1": { x:  18, y: 34, z: -12 },
+            "ATTIC_1":          { x:  38, y: 22, z: -26 },
+            "LADDER_2":         { x:  26, y:  6, z: -18 },
+            "ATTIC_2":          { x: -32, y: 20, z:  22 },
+            "FORTRESSES":       { x: -38, y:  4, z:  26 },
+            "ALTARS":           { x:  30, y: -6, z: -20 },
+            "WOOD":             { x:  22, y: 12, z:  32 },
+            "DRIED_VEGETABLES": { x: -24, y: 28, z: -18 },
+        };
+
+        function addAnnotation(meshName, text) {
+            if (!mainModel) return;
+
+            let targetMesh = null;
+            mainModel.traverse(child => {
+                if (child.name === meshName) targetMesh = child;
+            });
+            if (!targetMesh) return;
+
+            // 1. Point d'ancrage
+            const targetPoint = new THREE.Vector3();
+            if (meshName === "ALTARS") {
+                targetMesh.getWorldPosition(targetPoint);
+            } else {
+                new THREE.Box3().setFromObject(targetMesh).getCenter(targetPoint);
+            }
+
+            // 2. Position du label
+            const off = SPATIAL_MAP[meshName] || { x: 10, y: 14, z: 8 };
+            const labelPos = targetPoint.clone().add(new THREE.Vector3(off.x, off.y, off.z));
+
+            // 3. Trait de liaison
+            const line = new THREE.Line(
+                new THREE.BufferGeometry().setFromPoints([targetPoint, labelPos]),
+                new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.28 })
+            );
+            landscapeScene.add(line);
+
+            // 4. Losange sur le modèle
+            const dotDiv = document.createElement('div');
+            dotDiv.className = 'annotation-dot';
+            const dotObj = new CSS2DObject(dotDiv);
+            dotObj.position.copy(targetPoint);
+            landscapeScene.add(dotObj);
+
+            // 5. Index et délai de révélation
+            const orderIdx = ANNOTATION_ORDER.indexOf(meshName);
+            const idx = orderIdx >= 0 ? orderIdx : annotations.length;
+            const indexStr = String(idx + 1).padStart(2, '0');
+            const revealDelay = (idx * 280 + 900) + 'ms';
+            const isLeft = off.x < 0;
+
+            // 6. Bloc texte
+            const cardRoot = document.createElement('div');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'annotation-wrapper';
+            wrapper.style.animationDelay = revealDelay;
+            wrapper.style.transform = isLeft ? 'translateX(-100%)' : 'translateX(0)';
+
+            const card = document.createElement('div');
+            card.className = 'annotation-card';
+            card.style.alignItems = isLeft ? 'flex-end' : 'flex-start';
+            card.style.textAlign  = isLeft ? 'right'    : 'left';
+            card.addEventListener('click', () => showInfo(meshName, targetPoint, labelPos));
+
+            const indexEl = document.createElement('div');
+            indexEl.className = 'annotation-index';
+            indexEl.textContent = indexStr;
+
+            const titleEl = document.createElement('div');
+            titleEl.className = 'annotation-title';
+            titleEl.textContent = PART_DESCRIPTIONS[meshName]?.title ?? text;
+
+            const dividerEl = document.createElement('div');
+            dividerEl.className = 'annotation-divider';
+
+            const subtitleEl = document.createElement('div');
+            subtitleEl.className = 'annotation-subtitle';
+            subtitleEl.textContent = ANNOTATION_SUBTITLE[meshName] ?? 'Architecture Batammariba';
+
+            const ctaEl = document.createElement('div');
+            ctaEl.className = 'annotation-cta';
+            ctaEl.textContent = '→ Explorer';
+            // Stagger le CTA pour qu'il ne pulse pas en même temps que les autres
+            ctaEl.style.animationDelay = (idx * 0.4) + 's';
+
+            card.appendChild(indexEl);
+            card.appendChild(titleEl);
+            card.appendChild(dividerEl);
+            card.appendChild(subtitleEl);
+            card.appendChild(ctaEl);
+            wrapper.appendChild(card);
+            cardRoot.appendChild(wrapper);
+
+            const cardObj = new CSS2DObject(cardRoot);
+            cardObj.position.copy(labelPos);
+            landscapeScene.add(cardObj);
+
+            // Cachées par défaut — révélées via le bouton Découvrir
+            line.visible = false;
+
+            annotations.push({ label: cardObj, line, dotLabel: dotObj });
+        }
+
+        /**
+         * Affiche la fiche d'information et effectue un zoom caméra fluide vers la partie.
+         *
+         * Logique caméra :
+         *  - On calcule la direction actuelle caméra → point cible
+         *  - On se place à distance fixe (40 unités) dans cette même direction
+         *  - Résultat : la caméra glisse directement vers le sujet sans saut latéral
+         */
+        // Stocke le tween de rotation pour pouvoir l'annuler au closeInfo
+        let orbitTween = null;
+
+        // Interrompt la rotation orbitale dès que l'utilisateur touche la caméra
+        function _onUserInteract() {
+            if (orbitTween) { orbitTween.kill(); orbitTween = null; }
+        }
+
+        function showInfo(partName, point, labelPos) {
+            const data = PART_DESCRIPTIONS[partName];
+            if (!data) return;
+
+            document.getElementById('info-title').innerText = data.title;
+            document.getElementById('info-text').innerText = data.desc;
+            document.getElementById('info-card').classList.add('active');
+            document.getElementById('ui-bottom').classList.add('fade');
+
+            if (landscapeControls) {
+                landscapeControls.autoRotate = false;
+                landscapeControls.enabled = false; // bloque le conflit GSAP ↔ contrôles
+            }
+            if (orbitTween) { orbitTween.kill(); orbitTween = null; }
+
+            // Direction caméra → point
+            const camPos = landscapeCamera.position.clone();
+            const dir = camPos.clone().sub(point).normalize();
+
+            let zoomDist = 40;
+            if (partName === "THATCHED COVER_1") zoomDist = 28;
+            if (partName === "FORTRESSES")        zoomDist = 55;
+
+            const targetCamPos = point.clone().add(dir.multiplyScalar(zoomDist));
+            targetCamPos.y = Math.max(targetCamPos.y, point.y + 8);
+
+            // Phase 1 : pivot du regard
+            gsap.to(landscapeControls.target, {
+                x: point.x, y: point.y, z: point.z,
+                duration: 0.6,
+                ease: "power2.out",
+                onUpdate: () => landscapeControls.update()
+            });
+
+            // Phase 2 : glissement vers la partie
+            gsap.to(landscapeCamera.position, {
+                x: targetCamPos.x,
+                y: targetCamPos.y,
+                z: targetCamPos.z,
+                duration: 1.4,
+                delay: 0.1,
+                ease: "power3.inOut",
+                onUpdate: () => landscapeControls.update(),
+                onComplete: () => {
+                    // Réactive les contrôles → l'utilisateur peut explorer librement
+                    landscapeControls.enabled = true;
+                    landscapeControls.addEventListener('start', _onUserInteract);
+
+                    // Phase 3 : légère rotation orbitale (interruptible par l'utilisateur)
+                    const dx = landscapeCamera.position.x - point.x;
+                    const dz = landscapeCamera.position.z - point.z;
+                    const radius = Math.sqrt(dx * dx + dz * dz);
+                    const startAngle = Math.atan2(dz, dx);
+                    const sweepAngle = THREE.MathUtils.degToRad(35);
+                    const camY = landscapeCamera.position.y;
+
+                    const proxy = { angle: startAngle };
+                    orbitTween = gsap.to(proxy, {
+                        angle: startAngle + sweepAngle,
+                        duration: 3.5,
+                        ease: "power1.inOut",
+                        yoyo: true,
+                        repeat: 1,
+                        onUpdate: () => {
+                            landscapeCamera.position.x = point.x + radius * Math.cos(proxy.angle);
+                            landscapeCamera.position.z = point.z + radius * Math.sin(proxy.angle);
+                            landscapeCamera.position.y = camY;
+                            landscapeCamera.lookAt(point);
+                            landscapeControls.update();
+                        },
+                        onComplete: () => { orbitTween = null; }
+                    });
+                }
+            });
+        }
+
+        /**
+         * Masque le tableau descriptif, recule la vue globale et fait réapparaitre les boutons.
+         */
+        function closeInfo() {
+            document.getElementById('info-card').classList.remove('active');
+            document.getElementById('ui-bottom').classList.remove('fade');
+
+            // Stoppe la rotation orbitale et retire le listener d'interruption
+            if (orbitTween) { orbitTween.kill(); orbitTween = null; }
+            if (landscapeControls) landscapeControls.removeEventListener('start', _onUserInteract);
+
+            // Retour large — pivot d'abord, puis recul caméra
+            gsap.to(landscapeControls.target, {
+                x: 0, y: 0, z: 0,
+                duration: 0.8,
+                ease: "power2.out",
+                onUpdate: () => landscapeControls.update()
+            });
+            gsap.to(landscapeCamera.position, {
+                x: 100, y: 80, z: 150,
+                duration: 1.8,
+                delay: 0.1,
+                ease: "power3.inOut",
+                onUpdate: () => landscapeControls.update(),
+                onComplete: () => { if (landscapeControls) landscapeControls.autoRotate = true; }
+            });
+        }
+
+        // Liaison via addEventListener (pas d'onclick inline)
+        document.getElementById('close-info-btn').addEventListener('click', closeInfo);
+
+        /* =====================================================
+           ANIMATION RETOUR À L'ESPACE
+           Phase 1 : décollage rapide du paysage (blur + zoom out)
+           Phase 2 : flash de transition doré → noir
+           Phase 3 : globe apparaît au ras de la surface du Togo
+           Phase 4 : recul cinématique vers l'espace
+           ===================================================== */
+        async function returnToSpace() {
+            if (isTransitioning) return;
+            isTransitioning = true;
+
+            // Tue tout tween GSAP actif sur les caméras
+            gsap.killTweensOf(camera.position);
+            if (landscapeCamera) gsap.killTweensOf(landscapeCamera.position);
+
+            // Masquer UI et annotations immédiatement
+            const uiTop    = document.getElementById('ui-top');
+            const uiBottom = document.getElementById('ui-bottom');
+            uiTop.classList.add('fade');
+            uiBottom.classList.add('fade');
+            const explBtn = document.getElementById('explore-btn');
+            explBtn.classList.remove('shown', 'active');
+            document.querySelector('.explore-text').textContent = 'Découvrir';
+            annotationsVisible = false;
+            hideAnnotations();
+            stopAmbianceAudio();
+            document.getElementById('info-card').classList.remove('active');
+            if (orbitTween) { orbitTween.kill(); orbitTween = null; }
+            if (landscapeControls) landscapeControls.autoRotate = false;
+
+            const lc      = document.getElementById('landscape-container');
+            const canvas  = renderer.domElement;
+
+            // ── Phase 1 : décollage (0.85s) ─────────────────────────────
+            // Caméra s'éloigne vers le ciel + blur croissant (vitesse de vaisseau)
+            const blurProxy = { v: 0 };
+            const tl = gsap.timeline();
+            tl.to(landscapeCamera.position,
+                { x: 0, y: 1400, z: 0, duration: 0.85, ease: 'power3.in',
+                  onUpdate: () => landscapeCamera.lookAt(0, 0, 0) }, 0);
+            tl.to(blurProxy,
+                { v: 16, duration: 0.85, ease: 'power3.in',
+                  onUpdate: () => {
+                    if (landscapeRenderer)
+                        landscapeRenderer.domElement.style.filter = `blur(${blurProxy.v}px)`;
+                  } }, 0);
+            await new Promise(r => tl.eventCallback('onComplete', r));
+
+            // Nettoie le blur du paysage
+            if (landscapeRenderer) landscapeRenderer.domElement.style.filter = '';
+
+            // ── Bascule vers le globe ────────────────────────────────────
+            step = 0;
+            document.getElementById('title').innerText    = locations[0].name;
+            document.getElementById('subtitle').innerText = STEP_SUBTITLES[0];
+            if (atmosphere) atmosphere.visible = true;
+
+            // Caméra globe juste au-dessus du Togo (ras de la surface)
+            const surfacePos = latLonToVector3(10.1, 0.82, 107);
+            camera.position.copy(surfacePos);
+            camera.lookAt(0, 0, 0);
+
+            lc.style.opacity  = '0';
+            lc.style.display  = 'none';
+            canvas.style.transition = 'none';
+            canvas.style.opacity    = '1';
+
+            // ── Recul cinématique vers l'espace (2.6s) ───────────────────
+            await new Promise(r => setTimeout(r, 40));
+
+            const finalPos = latLonToVector3(locations[0].lat, locations[0].lon, locations[0].distance);
+            await new Promise(resolve => {
+                gsap.to(camera.position, {
+                    x: finalPos.x, y: finalPos.y, z: finalPos.z,
+                    duration: 2.6, ease: 'power2.out',
+                    onUpdate: () => { camera.lookAt(0, 0, 0); if (controls) controls.update(); },
+                    onComplete: resolve
+                });
+            });
+
+            // ── Restauration ────────────────────────────────────────────
+            isTransitioning = false;
+            uiTop.classList.remove('fade');
+            uiBottom.classList.remove('fade');
+            document.getElementById('next-btn').style.display   = 'inline-block';
+            document.getElementById('next-btn').innerText        = 'Explorer le Togo';
+            document.getElementById('ar-btn').style.display      = 'none';
+            document.getElementById('back-btn').style.display    = 'none';
+            document.getElementById('ar-unsupported').style.display = 'none';
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            // Rendre le globe tout au long de la transition
+            if (step !== 2 || isTransitioning) {
+                if (step !== 2 && controls) controls.update();
+                renderer.render(scene, camera);
+            }
+            if (step === 2 && landscapeRenderer) {
+                landscapeControls.update();
+                landscapeRenderer.render(landscapeScene, landscapeCamera);
+                if (labelRenderer) labelRenderer.render(landscapeScene, landscapeCamera);
+            }
+        }
+
+        init();
+    </script>
+</body>
+
+</html>""
